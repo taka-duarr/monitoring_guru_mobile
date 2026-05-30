@@ -68,6 +68,41 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
+  static Future<Map<String, dynamic>> getAbsenMurid(String absenMasukId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/absen-murid/$absenMasukId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> saveAbsenMurid(String absenMasukId, List<dynamic> murids) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/absen-murid/$absenMasukId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'murids': murids,
+      }),
+    );
+
+    return jsonDecode(response.body);
+  }
+
   static Future<Map<String, dynamic>> scanQr(String qrData) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');

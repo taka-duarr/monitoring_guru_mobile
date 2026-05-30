@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
+import 'absen_murid_screen.dart';
 
 class RiwayatMapelScreen extends StatefulWidget {
   final String mapelId;
@@ -171,6 +172,33 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                                   ),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AbsenMuridScreen(
+                                        absenMasukId: item['id'],
+                                        mapelName: widget.mapelName,
+                                        kelasName: kelas,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.people, size: 18),
+                                label: const Text('Absen Murid'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.indigo.shade50,
+                                  foregroundColor: Colors.indigo.shade700,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                ),
+                              ),
                             ),
                           ],
                         ),

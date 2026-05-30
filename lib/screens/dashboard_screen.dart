@@ -7,9 +7,9 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
-import 'scanner_screen.dart';
-
 import 'riwayat_mapel_screen.dart';
+import 'absen_murid_screen.dart';
+import 'scanner_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -207,7 +207,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 ),
                                               ],
                                             ),
-                                            const SizedBox(height: 8),
+                                            const SizedBox(height: 12),
+                                            Row(
+                                              children: [
+                                                if (!isKetua)
+                                                  Expanded(
+                                                    child: ElevatedButton.icon(
+                                                      onPressed: () {
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (context) => AbsenMuridScreen(
+                                                              absenMasukId: j['absen_masuk']['id'],
+                                                              mapelName: j['mapel']['name'] ?? 'Mapel',
+                                                              kelasName: j['kelas']['name'] ?? '-',
+                                                            ),
+                                                          ),
+                                                        ).then((_) => _fetchJadwal());
+                                                      },
+                                                      icon: const Icon(Icons.people, size: 18),
+                                                      label: const Text('Absen Murid'),
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: Colors.indigo.shade50,
+                                                        foregroundColor: Colors.indigo.shade700,
+                                                        elevation: 0,
+                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                if (!isKetua) const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: ElevatedButton.icon(
+                                                    onPressed: isSelesai ? null : () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) => const ScannerScreen(),
+                                                        ),
+                                                      ).then((_) => _fetchJadwal());
+                                                    },
+                                                    icon: Icon(isSelesai ? Icons.check_circle : Icons.qr_code_scanner, size: 18),
+                                                    label: Text(isSelesai ? 'Selesai' : 'Scan QR KELUAR'),
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: isSelesai ? Colors.grey.shade300 : Colors.red.shade50,
+                                                      foregroundColor: isSelesai ? Colors.grey.shade600 : Colors.red.shade700,
+                                                      elevation: 0,
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -228,7 +278,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   _showQrModal(context, j['id'].toString(), j['mapel']['name'] ?? 'Mapel', hasMasuk);
                                                 },
                                               )
-                                            : ElevatedButton.icon(
+                                            : !hasMasuk ? ElevatedButton.icon(
                                                 icon: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 20),
                                                 label: Text(hasMasuk ? 'Scan QR KELUAR' : 'Scan QR MASUK', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
                                                 style: ElevatedButton.styleFrom(
@@ -241,7 +291,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ScannerScreen()))
                                                     .then((_) => _fetchJadwal());
                                                 },
-                                              ),
+                                              ) : const SizedBox.shrink(),
                                       ),
                                   ],
                                 ),
