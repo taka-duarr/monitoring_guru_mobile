@@ -67,7 +67,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.emerald, width: 3),
+                border: Border.all(color: Colors.teal, width: 3),
                 borderRadius: BorderRadius.circular(20),
                 color: Colors.transparent,
               ),
@@ -88,7 +88,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
             Container(
               color: Colors.black.withOpacity(0.7),
               child: const Center(
-                child: CircularProgressIndicator(color: Colors.emerald),
+                child: CircularProgressIndicator(color: Colors.teal),
               ),
             )
         ],

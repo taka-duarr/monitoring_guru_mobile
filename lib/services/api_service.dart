@@ -1,15 +1,19 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
-  // Gunakan IP lokal mesin (10.0.2.2 untuk emulator, atau IP fisik jika pakai device asli)
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
+  // Mengambil Base URL dari file .env (jika tidak ada, fallback ke localhost)
+  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000/api';
 
   static Future<Map<String, dynamic>> login(String nik, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/login'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
       body: jsonEncode({'nik': nik, 'password': password}),
     );
 
@@ -24,6 +28,7 @@ class ApiService {
       Uri.parse('$baseUrl/logout'),
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       },
     );
@@ -39,6 +44,23 @@ class ApiService {
       Uri.parse('$baseUrl/jadwal'),
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> getRiwayatMapel(String mapelId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/riwayat-mapel/$mapelId'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       },
     );
@@ -54,6 +76,7 @@ class ApiService {
       Uri.parse('$baseUrl/scan'),
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       },
       body: jsonEncode({'qr_data': qrData}),
