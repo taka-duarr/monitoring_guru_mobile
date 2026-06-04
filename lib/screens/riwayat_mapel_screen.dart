@@ -17,6 +17,31 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
   bool _isLoading = true;
   List<dynamic> _riwayat = [];
 
+  String _formatTanggal(dynamic value) {
+    final tanggal = value?.toString().trim() ?? '';
+    if (tanggal.isEmpty) return '-';
+
+    final parsed = DateTime.tryParse(tanggal);
+    if (parsed != null) {
+      final day = parsed.day.toString().padLeft(2, '0');
+      final month = parsed.month.toString().padLeft(2, '0');
+      final year = parsed.year.toString();
+      return '$day-$month-$year';
+    }
+
+    final normalized = tanggal.split('T').first;
+    final parts = normalized.split(RegExp(r'[-/]'));
+    if (parts.length == 3) {
+      if (parts[0].length == 4) {
+        return '${parts[2].padLeft(2, '0')}-${parts[1].padLeft(2, '0')}-${parts[0]}';
+      }
+
+      return '${parts[0].padLeft(2, '0')}-${parts[1].padLeft(2, '0')}-${parts[2].length == 4 ? parts[2] : parts[2].padLeft(4, '0')}';
+    }
+
+    return tanggal;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -80,7 +105,7 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                   itemCount: _riwayat.length,
                   itemBuilder: (context, index) {
                     final item = _riwayat[index];
-                    final tanggal = item['tanggal'] ?? '';
+                    final tanggal = _formatTanggal(item['tanggal']);
                     final jamMasuk = item['jam_masuk'] ?? '-';
                     final absenKeluar = item['absen_keluar'];
                     final jamKeluar = absenKeluar != null ? absenKeluar['jam_keluar'] : '-';

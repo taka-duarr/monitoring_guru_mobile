@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
+import 'izin_guru_screen.dart';
 import 'riwayat_mapel_screen.dart';
 import 'absen_murid_screen.dart';
 import 'scanner_screen.dart';
@@ -302,6 +303,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Colors.blueGrey.shade100)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _BottomMenuItem(
+                  label: 'Jadwal',
+                  icon: Icons.home_outlined,
+                  selected: true,
+                  onTap: () {},
+                ),
+                _BottomMenuItem(
+                  label: 'Izin',
+                  icon: Icons.description_outlined,
+                  selected: false,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const IzinGuruScreen()),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -410,5 +452,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ).then((_) {
       pollingTimer?.cancel();
     });
+  }
+}
+
+class _BottomMenuItem extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _BottomMenuItem({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? Colors.indigo.shade700 : Colors.blueGrey.shade400;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
