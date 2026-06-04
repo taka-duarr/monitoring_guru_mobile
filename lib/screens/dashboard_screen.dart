@@ -272,7 +272,7 @@ class _EmptyStateWidget extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Kamu tidak memiliki jadwal mengajar\nuntuk hari ini. Nikmati hari liburmu! 🎉',
+              'Kamu tidak memiliki jadwal mengajar\nuntuk hari ini. Nikmati hari liburmu!',
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 14,
