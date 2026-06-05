@@ -193,7 +193,6 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
         'jadwal_ajar_id': _selectedJadwalId!,
         // Compatibility for backend that maps directly to table columns.
         'tanggal_izin': tanggal,
-        'jam_izin': _formatTime(DateTime.now()),
         'judul': judul,
       };
 
@@ -587,7 +586,6 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                             final bool approved = item['approval'].toString() == '1' ||
                             item['approval'].toString().toLowerCase() == 'true';
                             final String tanggal = item['tanggal_izin']?.toString() ?? '-';
-                            final String jam = item['jam_izin']?.toString() ?? '-';
                             final String judul = item['judul']?.toString() ?? '-';
                             final String pesan = item['pesan']?.toString() ?? '-';
                             return Container(
@@ -610,15 +608,15 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                                       shape: BoxShape.circle,
                                     ),
                                   ),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          '$judul • $tanggal $jam',
-                                          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
-                                        ),
-                                        const SizedBox(height: 2),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '$judul • $tanggal',
+                                            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                                          ),
+                                          const SizedBox(height: 2),
                                         Text(
                                           pesan,
                                           maxLines: 2,

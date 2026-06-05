@@ -128,7 +128,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return 'NIK/NIS harus diisi';
-                        if (v.trim().length < 6) return 'NIK/NIS tidak valid';
                         return null;
                       },
                     ),
@@ -149,7 +148,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Password harus diisi';
-                        if (v.length < 4) return 'Password terlalu pendek';
                         return null;
                       },
                     ),
