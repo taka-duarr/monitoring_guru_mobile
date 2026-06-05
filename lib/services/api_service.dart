@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:typed_data';
 
 class ApiService {
   // Mengambil Base URL dari file .env (jika tidak ada, fallback ke localhost)
@@ -120,20 +121,60 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, dynamic>> submitIzinGuru(Map<String, dynamic> data) async {
+  static Future<Map<String, dynamic>> getIzinGuru() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
-    final response = await http.post(
+    final response = await http.get(
       Uri.parse('$baseUrl/izin'),
       headers: {
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode(data),
     );
 
     return jsonDecode(response.body);
   }
+
+  static Future<Map<String, dynamic>> submitIzinGuru({
+  required Map<String, String> data,
+  String? filePath,
+  Uint8List? fileBytes,
+  String? fileName,
+}) async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('token');
+
+  final request = http.MultipartRequest(
+    'POST',
+    Uri.parse('$baseUrl/izin'),
+  );
+
+  request.headers['Accept'] = 'application/json';
+  request.headers['Authorization'] = 'Bearer $token';
+  request.fields.addAll(data);
+
+  // 🔥 MOBILE
+  if (filePath != null && filePath.isNotEmpty) {
+    request.files.add(
+      await http.MultipartFile.fromPath('file', filePath),
+    );
+  }
+
+  // 🔥 WEB (INI YANG SEBELUMNYA KAMU TIDAK PUNYA)
+  if (fileBytes != null) {
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        fileBytes,
+        filename: fileName ?? 'file',
+      ),
+    );
+  }
+
+  final streamedResponse = await request.send();
+  final response = await http.Response.fromStream(streamedResponse);
+
+  return jsonDecode(response.body);
+}
 }
