@@ -8,11 +8,11 @@ class AbsenMuridScreen extends StatefulWidget {
   final String kelasName;
 
   const AbsenMuridScreen({
-    Key? key,
+    super.key,
     required this.absenMasukId,
     required this.mapelName,
     required this.kelasName,
-  }) : super(key: key);
+  });
 
   @override
   State<AbsenMuridScreen> createState() => _AbsenMuridScreenState();
@@ -37,8 +37,6 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
           _murids = response['data'] ?? [];
         });
       }
-    } catch (e) {
-      print('Error fetching murid: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -74,7 +72,6 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
         );
       }
     } catch (e) {
-      print('Error saving absen: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Terjadi kesalahan jaringan'), backgroundColor: Colors.red),

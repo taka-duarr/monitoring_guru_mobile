@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -7,7 +10,7 @@ import '../services/api_service.dart';
 import 'dashboard_screen.dart';
 
 class IzinGuruScreen extends StatefulWidget {
-  const IzinGuruScreen({Key? key}) : super(key: key);
+  const IzinGuruScreen({super.key});
 
   @override
   State<IzinGuruScreen> createState() => _IzinGuruScreenState();
@@ -16,19 +19,24 @@ class IzinGuruScreen extends StatefulWidget {
 class _IzinGuruScreenState extends State<IzinGuruScreen> {
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _isPickingFile = false;
+  List<dynamic> _riwayatIzin = [];
   List<dynamic> _jadwalList = [];
 
   final TextEditingController _pesanController = TextEditingController();
 
-  String? _selectedJadwalId;
-  String _jenisIzin = 'Sakit';
+  String _jenisIzin = 'sakit';
   DateTime _tanggalIzin = DateTime.now();
-  TimeOfDay _jamIzin = TimeOfDay.now();
+  String? _selectedJadwalId;
+  String? _selectedFilePath;
+  String? _selectedFileName;
+
+  Uint8List? get _selectedFileBytes => null;
 
   @override
   void initState() {
     super.initState();
-    _fetchJadwal();
+    _fetchRiwayatIzin();
   }
 
   @override
@@ -44,7 +52,7 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
     return '$day-$month-$year';
   }
 
-  String _formatTime(TimeOfDay value) {
+  String _formatTime(DateTime value) {
     final hour = value.hour.toString().padLeft(2, '0');
     final minute = value.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
@@ -59,20 +67,39 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
     return '$mapel • $kelas • $ruang ($jamMulai - $jamSelesai)';
   }
 
-  Future<void> _fetchJadwal() async {
+  Future<void> _fetchRiwayatIzin() async {
     try {
-      final response = await ApiService.getJadwal();
-      if (response['success'] == true) {
-        final List<dynamic> data = response['data'] ?? [];
-        setState(() {
-          _jadwalList = data;
-          if (_selectedJadwalId == null && data.isNotEmpty) {
-            _selectedJadwalId = data.first['id'].toString();
-          }
-        });
+      final results = await Future.wait([
+        ApiService.getIzinGuru(),
+        ApiService.getJadwal(),
+      ]);
+
+      final izinResponse = results[0];
+      final jadwalResponse = results[1];
+
+      if (izinResponse['success'] == true) {
+        final List<dynamic> data = izinResponse['data'] ?? [];
+        if (mounted) {
+          setState(() => _riwayatIzin = data);
+        }
+      }
+
+      if (jadwalResponse['success'] == true) {
+        final List<dynamic> jadwalData = jadwalResponse['data'] ?? [];
+        if (mounted) {
+          setState(() {
+            _jadwalList = jadwalData;
+            if (jadwalData.isEmpty) {
+              _selectedJadwalId = null;
+            } else if (_selectedJadwalId == null ||
+                !jadwalData.any((item) => item['id']?.toString() == _selectedJadwalId)) {
+              _selectedJadwalId = jadwalData.first['id']?.toString();
+            }
+          });
+        }
       }
     } catch (e) {
-      debugPrint('Error fetch jadwal izin: $e');
+      debugPrint('Error fetch riwayat izin: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -93,28 +120,62 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
     }
   }
 
-  Future<void> _pickTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _jamIzin,
-    );
+  Future<void> _pickFile() async {
+    if (_isPickingFile) return;
+    setState(() => _isPickingFile = true);
 
-    if (picked != null) {
-      setState(() => _jamIzin = picked);
+    try {
+      const typeGroup = XTypeGroup(
+        label: 'Bukti Izin',
+        extensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'],
+      );
+
+      final picked = await openFile(
+        acceptedTypeGroups: [typeGroup],
+        confirmButtonText: 'Pilih',
+      );
+
+      if (!mounted) return;
+      if (picked == null) {
+        return;
+      }
+
+      final size = await picked.length();
+      if (size > 2 * 1024 * 1024) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ukuran file maksimal 2MB')),
+        );
+        return;
+      }
+
+      if (picked.path.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Path file tidak valid, silakan pilih file lain')),
+        );
+        return;
+      }
+
+      setState(() {
+        _selectedFilePath = picked.path;
+        _selectedFileName = picked.name.isEmpty ? 'file' : picked.name;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal membuka file picker')),
+      );
+      debugPrint('Error pick file izin: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isPickingFile = false);
+      }
     }
   }
 
   Future<void> _submitIzin() async {
-    if (_selectedJadwalId == null) {
+    if (_selectedJadwalId == null || _selectedJadwalId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pilih jadwal ajar terlebih dahulu')),
-      );
-      return;
-    }
-
-    if (_pesanController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Keterangan / alasan harus diisi')),
       );
       return;
     }
@@ -122,13 +183,31 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      final response = await ApiService.submitIzinGuru({
-        'jadwal_ajar_id': _selectedJadwalId,
-        'tanggal_izin': _tanggalIzin.toIso8601String().split('T').first,
-        'jam_izin': _formatTime(_jamIzin),
-        'judul': _jenisIzin,
-        'pesan': _pesanController.text.trim(),
-      });
+      final tanggal = _tanggalIzin.toIso8601String().split('T').first;
+      final judul = _jenisIzin == 'sakit' ? 'Sakit' : 'Izin';
+      final pesan = _pesanController.text.trim();
+
+      final payload = <String, String>{
+        'tanggal': tanggal,
+        'jenis': _jenisIzin,
+        'jadwal_ajar_id': _selectedJadwalId!,
+        // Compatibility for backend that maps directly to table columns.
+        'tanggal_izin': tanggal,
+        'jam_izin': _formatTime(DateTime.now()),
+        'judul': judul,
+      };
+
+      if (pesan.isNotEmpty) {
+        payload['keterangan'] = pesan;
+        payload['pesan'] = pesan;
+      }
+
+      final response = await ApiService.submitIzinGuru(
+        data: payload,
+        fileBytes: _selectedFileBytes,
+        fileName: _selectedFileName,
+        filePath: _selectedFilePath,
+      );
 
       if (!mounted) return;
 
@@ -136,7 +215,14 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response['message'] ?? 'Pengajuan izin berhasil dikirim')),
         );
-        Navigator.pop(context);
+        setState(() {
+          _jenisIzin = 'sakit';
+          _tanggalIzin = DateTime.now();
+          _selectedFilePath = null;
+          _selectedFileName = null;
+          _pesanController.clear();
+        });
+        _fetchRiwayatIzin();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response['message'] ?? 'Gagal mengirim pengajuan izin')),
@@ -157,6 +243,67 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+
+    // Restrict access: only users with role 'guru' may access this screen
+    if (!auth.isAuthenticated || auth.role.toLowerCase() != 'guru') {
+      return Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          iconTheme: IconThemeData(color: Colors.blueGrey.shade800),
+          title: Text(
+            'Pengajuan Izin',
+            style: GoogleFonts.outfit(
+              color: Colors.blueGrey.shade800,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_outline, size: 56, color: Colors.blueGrey.shade300),
+                const SizedBox(height: 12),
+                Text(
+                  'Akses ditolak',
+                  style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade800),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Fitur ini hanya dapat diakses oleh Guru.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(color: Colors.blueGrey.shade600),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: 160,
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo.shade600,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: Text('Kembali', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -180,14 +327,6 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Pengajuan Izin',
-                    style: GoogleFonts.outfit(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueGrey.shade900,
-                    ),
-                  ),
                   const SizedBox(height: 4),
                   Text(
                     'Formulir ketidakhadiran harian',
@@ -216,7 +355,8 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                         Text('Jadwal Ajar', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
-                          value: _selectedJadwalId,
+                          key: ValueKey('jadwal_${_selectedJadwalId ?? 'none'}_${_jadwalList.length}'),
+                          initialValue: _selectedJadwalId,
                           isExpanded: true,
                           decoration: InputDecoration(
                             filled: true,
@@ -233,11 +373,12 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                               borderRadius: BorderRadius.circular(14),
                               borderSide: BorderSide(color: Colors.indigo.shade300, width: 1.4),
                             ),
+                            hintText: _jadwalList.isEmpty ? 'Belum ada jadwal tersedia' : 'Pilih jadwal ajar',
                           ),
                           items: _jadwalList
                               .map(
                                 (item) => DropdownMenuItem<String>(
-                                  value: item['id'].toString(),
+                                  value: item['id']?.toString(),
                                   child: Text(
                                     _jadwalLabel(item),
                                     overflow: TextOverflow.ellipsis,
@@ -246,10 +387,30 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                                 ),
                               )
                               .toList(),
-                          onChanged: (value) {
-                            setState(() => _selectedJadwalId = value);
-                          },
+                          onChanged: _jadwalList.isEmpty
+                              ? null
+                              : (value) {
+                                  setState(() => _selectedJadwalId = value);
+                                },
                         ),
+                        if (_jadwalList.isEmpty) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Jadwal tidak ditemukan untuk akun ini.',
+                                  style: GoogleFonts.inter(fontSize: 12, color: Colors.orange.shade700),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _fetchRiwayatIzin,
+                                child: const Text('Muat ulang'),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 4),
                         const SizedBox(height: 16),
                         Text('Tanggal', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
                         const SizedBox(height: 8),
@@ -278,33 +439,6 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Text('Jam Izin', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: _pickTime,
-                          borderRadius: BorderRadius.circular(14),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.blueGrey.shade100),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _formatTime(_jamIzin),
-                                    style: GoogleFonts.inter(fontSize: 14, color: Colors.blueGrey.shade800),
-                                  ),
-                                ),
-                                Icon(Icons.schedule, color: Colors.blueGrey.shade400),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
                         Text('Jenis Izin', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
                         const SizedBox(height: 8),
                         Row(
@@ -312,16 +446,16 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                             Expanded(
                               child: _ChoicePill(
                                 label: 'Sakit',
-                                selected: _jenisIzin == 'Sakit',
-                                onTap: () => setState(() => _jenisIzin = 'Sakit'),
+                                selected: _jenisIzin == 'sakit',
+                                onTap: () => setState(() => _jenisIzin = 'sakit'),
                               ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: _ChoicePill(
-                                label: 'Keperluan Lain',
-                                selected: _jenisIzin == 'Keperluan Lain',
-                                onTap: () => setState(() => _jenisIzin = 'Keperluan Lain'),
+                                label: 'Izin',
+                                selected: _jenisIzin == 'izin',
+                                onTap: () => setState(() => _jenisIzin = 'izin'),
                               ),
                             ),
                           ],
@@ -353,33 +487,52 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                         const SizedBox(height: 16),
                         Text('Bukti (Surat Dokter/Lampiran)', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
                         const SizedBox(height: 8),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 26),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.indigo.shade100, style: BorderStyle.solid),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(Icons.file_upload_outlined, size: 34, color: Colors.blueGrey.shade400),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Upload File (Max: 2MB)',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  color: Colors.blueGrey.shade600,
-                                  fontWeight: FontWeight.w600,
+                        InkWell(
+                          onTap: _isPickingFile ? null : _pickFile,
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.indigo.shade100, style: BorderStyle.solid),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(Icons.file_upload_outlined, size: 34, color: Colors.blueGrey.shade400),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _isPickingFile
+                                      ? 'Membuka file picker...'
+                                      : (_selectedFileName == null ? 'Pilih File Bukti (opsional)' : _selectedFileName!),
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: Colors.blueGrey.shade700,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Lampiran dapat ditambahkan nanti jika backend sudah siap',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.inter(fontSize: 11, color: Colors.blueGrey.shade400),
-                              ),
-                            ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Format: jpg, jpeg, png, pdf, doc, docx (Maks: 2MB)',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.inter(fontSize: 11, color: Colors.blueGrey.shade500),
+                                ),
+                                if (_selectedFileName != null) ...[
+                                  const SizedBox(height: 8),
+                                  TextButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedFilePath = null;
+                                        _selectedFileName = null;
+                                      });
+                                    },
+                                    child: const Text('Hapus lampiran'),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(height: 18),
@@ -412,12 +565,89 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                                   ),
                           ),
                         ),
+                        const SizedBox(height: 24),
+                        Text('Riwayat Izin', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+                        const SizedBox(height: 10),
+                        if (_riwayatIzin.isEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.blueGrey.shade100),
+                            ),
+                            child: Text(
+                              'Belum ada riwayat izin.',
+                              style: GoogleFonts.inter(color: Colors.blueGrey.shade500),
+                            ),
+                          )
+                        else                          
+                            ..._riwayatIzin.take(5).map((item) {
+                            final bool approved = item['approval'].toString() == '1' ||
+                            item['approval'].toString().toLowerCase() == 'true';
+                            final String tanggal = item['tanggal_izin']?.toString() ?? '-';
+                            final String jam = item['jam_izin']?.toString() ?? '-';
+                            final String judul = item['judul']?.toString() ?? '-';
+                            final String pesan = item['pesan']?.toString() ?? '-';
+                            return Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.blueGrey.shade100),
+                              ),
+                              child: Row(
+                                children: [                                                         
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    margin: const EdgeInsets.only(right: 10),
+                                    decoration: BoxDecoration(
+                                      color: approved ? Colors.green : Colors.orange,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '$judul • $tanggal $jam',
+                                          style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          pesan,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(fontSize: 12, color: Colors.blueGrey.shade600),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    approved ? 'Disetujui' : 'Menunggu',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: approved ? Colors.green.shade700 : Colors.orange.shade700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
+
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,

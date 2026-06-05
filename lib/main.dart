@@ -21,7 +21,7 @@ void main() async {
 }
 
 class AbsensiApp extends StatelessWidget {
-  const AbsensiApp({Key? key}) : super(key: key);
+  const AbsensiApp({super.key});
 
   @override
   Widget build(BuildContext context) {

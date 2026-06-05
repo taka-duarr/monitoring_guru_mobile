@@ -13,9 +13,10 @@ import 'absen_murid_screen.dart';
 import 'scanner_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _DashboardScreenState createState() => _DashboardScreenState();
 }
 
@@ -46,6 +47,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _logout() async {
     await Provider.of<AuthProvider>(context, listen: false).logout();
     Navigator.pushReplacement(
+        // ignore: use_build_context_synchronously
         context, MaterialPageRoute(builder: (_) => const LoginScreen()));
   }
 
@@ -328,17 +330,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   selected: true,
                   onTap: () {},
                 ),
-                _BottomMenuItem(
-                  label: 'Izin',
-                  icon: Icons.description_outlined,
-                  selected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const IzinGuruScreen()),
-                    );
-                  },
-                ),
+                if (!isKetua)
+                  _BottomMenuItem(
+                    label: 'Izin',
+                    icon: Icons.description_outlined,
+                    selected: false,
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const IzinGuruScreen()),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -368,15 +371,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
             if (!wasMasuk && isNowMasuk) {
               timer.cancel();
               if (mounted) {
+                // ignore: use_build_context_synchronously
                 Navigator.pop(context);
                 _fetchJadwal();
+                // ignore: use_build_context_synchronously
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sip! Guru berhasil absen MASUK!')));
               }
             } else if (wasMasuk && isNowKeluar) {
               timer.cancel();
               if (mounted) {
+                // ignore: use_build_context_synchronously
                 Navigator.pop(context);
                 _fetchJadwal();
+                // ignore: use_build_context_synchronously
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sip! Guru berhasil absen KELUAR!')));
               }
             }
