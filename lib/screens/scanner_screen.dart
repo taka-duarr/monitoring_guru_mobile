@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 
 class ScannerScreen extends StatefulWidget {
-  const ScannerScreen({Key? key}) : super(key: key);
+  const ScannerScreen({super.key});
 
   @override
   _ScannerScreenState createState() => _ScannerScreenState();
@@ -43,6 +43,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Scan QR Absensi', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
@@ -59,7 +61,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           // Overlay UI
           Container(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
             ),
           ),
           Center(
@@ -67,7 +69,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.teal, width: 3),
+                border: Border.all(color: primaryColor, width: 3),
                 borderRadius: BorderRadius.circular(20),
                 color: Colors.transparent,
               ),
@@ -86,9 +88,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ),
           if (_isProcessing)
             Container(
-              color: Colors.black.withOpacity(0.7),
-              child: const Center(
-                child: CircularProgressIndicator(color: Colors.teal),
+              color: Colors.black.withValues(alpha: 0.7),
+              child: Center(
+                child: CircularProgressIndicator(color: primaryColor),
               ),
             )
         ],

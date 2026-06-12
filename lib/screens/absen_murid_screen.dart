@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
+import '../widgets/premium_button.dart';
 
 class AbsenMuridScreen extends StatefulWidget {
   final String absenMasukId;
@@ -96,23 +98,31 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
   @override
   Widget build(BuildContext context) {
     int countHadir = _murids.where((m) => m['status'] == 'hadir').length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.blueGrey.shade50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
         elevation: 0,
-        iconTheme: IconThemeData(color: Colors.blueGrey.shade800),
+        iconTheme: IconThemeData(color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Absen Kelas ${widget.kelasName}',
-              style: GoogleFonts.outfit(color: Colors.blueGrey.shade800, fontWeight: FontWeight.bold, fontSize: 18),
+              style: GoogleFonts.outfit(
+                color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
             Text(
               widget.mapelName,
-              style: GoogleFonts.inter(color: Colors.blueGrey.shade500, fontSize: 13),
+              style: GoogleFonts.inter(
+                color: isDark ? const Color(0xFF94A3B8) : Colors.blueGrey.shade500,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -125,7 +135,10 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
               },
               child: Text(
                 countHadir == _murids.length ? 'Deselect All' : 'Select All',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.indigo),
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? const Color(0xFF818CF8) : Colors.indigo,
+                ),
               ),
             )
         ],
@@ -134,17 +147,23 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _murids.isEmpty
               ? Center(
-                  child: Text('Belum ada data murid di kelas ini.', style: GoogleFonts.inter(color: Colors.grey)),
+                  child: Text(
+                    'Belum ada data murid di kelas ini.',
+                    style: GoogleFonts.inter(color: isDark ? const Color(0xFF94A3B8) : Colors.grey),
+                  ),
                 )
               : Column(
                   children: [
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                      color: Colors.indigo.shade50,
+                      color: isDark ? const Color(0xFF1E1B4B) : Colors.indigo.shade50,
                       child: Text(
                         'Total Hadir: $countHadir dari ${_murids.length} Siswa',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.indigo.shade700),
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? const Color(0xFFC7D2FE) : Colors.indigo.shade700,
+                        ),
                       ),
                     ),
                     Expanded(
@@ -157,24 +176,37 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
                           return Container(
                             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).cardColor,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: isHadir ? Colors.indigo.shade100 : Colors.red.shade100, width: 1.5),
+                              border: Border.all(
+                                color: isHadir
+                                    ? (isDark ? const Color(0xFF312E81) : Colors.indigo.shade100)
+                                    : (isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.4) : Colors.red.shade100),
+                                width: 1.5,
+                              ),
                             ),
                             child: CheckboxListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                              activeColor: Colors.indigo,
+                              activeColor: Theme.of(context).primaryColor,
                               checkColor: Colors.white,
                               title: Text(
                                 murid['name'] ?? '-',
-                                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: isDark ? const Color(0xFFF1F5F9) : Colors.black87,
+                                ),
                               ),
                               subtitle: Text(
                                 'No. ${murid['no_absen'] ?? '-'} • NIS: ${murid['nis'] ?? '-'}',
-                                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade600),
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                                ),
                               ),
                               value: isHadir,
                               onChanged: (bool? value) {
+                                HapticFeedback.lightImpact();
                                 setState(() {
                                   murid['status'] = (value == true) ? 'hadir' : 'alpa';
                                 });
@@ -186,23 +218,20 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
                     ),
                     Container(
                       padding: const EdgeInsets.all(20),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))],
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
+                            blurRadius: 10,
+                            offset: const Offset(0, -5),
+                          )
+                        ],
                       ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _isSaving ? null : _saveAbsen,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.indigo,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: _isSaving
-                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                              : Text('Simpan Absensi', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                        ),
+                      child: PremiumButton(
+                        label: 'Simpan Absensi',
+                        isLoading: _isSaving,
+                        onPressed: _saveAbsen,
                       ),
                     )
                   ],

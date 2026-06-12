@@ -7,7 +7,9 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
-import 'dashboard_screen.dart';
+import '../widgets/premium_button.dart';
+import 'main_navigation_wrapper.dart';
+import 'riwayat_izin_screen.dart';
 
 class IzinGuruScreen extends StatefulWidget {
   const IzinGuruScreen({super.key});
@@ -20,7 +22,6 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
   bool _isLoading = true;
   bool _isSubmitting = false;
   bool _isPickingFile = false;
-  List<dynamic> _riwayatIzin = [];
   List<dynamic> _jadwalList = [];
 
   final TextEditingController _pesanController = TextEditingController();
@@ -52,11 +53,7 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
     return '$day-$month-$year';
   }
 
-  String _formatTime(DateTime value) {
-    final hour = value.hour.toString().padLeft(2, '0');
-    final minute = value.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
+
 
   String _jadwalLabel(dynamic item) {
     final mapel = item['mapel']?['name'] ?? 'Mapel';
@@ -69,23 +66,10 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
 
   Future<void> _fetchRiwayatIzin() async {
     try {
-      final results = await Future.wait([
-        ApiService.getIzinGuru(),
-        ApiService.getJadwal(),
-      ]);
+      final response = await ApiService.getJadwal();
 
-      final izinResponse = results[0];
-      final jadwalResponse = results[1];
-
-      if (izinResponse['success'] == true) {
-        final List<dynamic> data = izinResponse['data'] ?? [];
-        if (mounted) {
-          setState(() => _riwayatIzin = data);
-        }
-      }
-
-      if (jadwalResponse['success'] == true) {
-        final List<dynamic> jadwalData = jadwalResponse['data'] ?? [];
+      if (response['success'] == true) {
+        final List<dynamic> jadwalData = response['data'] ?? [];
         if (mounted) {
           setState(() {
             _jadwalList = jadwalData;
@@ -99,7 +83,7 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Error fetch riwayat izin: $e');
+      debugPrint('Error fetch jadwal: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -243,19 +227,21 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // Restrict access: only users with role 'guru' may access this screen
     if (!auth.isAuthenticated || auth.role.toLowerCase() != 'guru') {
       return Scaffold(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).cardColor,
           elevation: 0,
           automaticallyImplyLeading: false,
-          iconTheme: IconThemeData(color: Colors.blueGrey.shade800),
+          iconTheme: IconThemeData(color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800),
           title: Text(
             'Pengajuan Izin',
             style: GoogleFonts.outfit(
-              color: Colors.blueGrey.shade800,
+              color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -266,17 +252,21 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lock_outline, size: 56, color: Colors.blueGrey.shade300),
+                Icon(Icons.lock_outline, size: 56, color: isDark ? const Color(0xFF475569) : Colors.blueGrey.shade300),
                 const SizedBox(height: 12),
                 Text(
                   'Akses ditolak',
-                  style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade800),
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Fitur ini hanya dapat diakses oleh Guru.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(color: Colors.blueGrey.shade600),
+                  style: GoogleFonts.inter(color: isDark ? const Color(0xFF94A3B8) : Colors.blueGrey.shade600),
                 ),
                 const SizedBox(height: 18),
                 SizedBox(
@@ -286,11 +276,11 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                        MaterialPageRoute(builder: (_) => const MainNavigationWrapper()),
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.indigo.shade600,
+                      backgroundColor: Theme.of(context).primaryColor,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
@@ -305,16 +295,16 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
         elevation: 0,
         automaticallyImplyLeading: false,
-        iconTheme: IconThemeData(color: Colors.blueGrey.shade800),
+        iconTheme: IconThemeData(color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800),
         title: Text(
           'Pengajuan Izin',
           style: GoogleFonts.outfit(
-            color: Colors.blueGrey.shade800,
+            color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -330,7 +320,7 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                   Text(
                     'Formulir ketidakhadiran harian',
                     style: GoogleFonts.inter(
-                      color: Colors.blueGrey.shade500,
+                      color: isDark ? const Color(0xFF94A3B8) : Colors.blueGrey.shade500,
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -338,11 +328,11 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.04),
                           blurRadius: 18,
                           offset: const Offset(0, 8),
                         ),
@@ -351,28 +341,37 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Jadwal Ajar', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text(
+                          'Jadwal Ajar',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: isDark ? const Color(0xFFF1F5F9) : Colors.black87,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
                           key: ValueKey('jadwal_${_selectedJadwalId ?? 'none'}_${_jadwalList.length}'),
                           initialValue: _selectedJadwalId,
                           isExpanded: true,
+                          dropdownColor: Theme.of(context).cardColor,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: isDark ? const Color(0xFF0F172A) : Colors.grey.shade50,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.blueGrey.shade100),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.blueGrey.shade100),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.blueGrey.shade100),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.blueGrey.shade100),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.indigo.shade300, width: 1.4),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade300, width: 1.4),
                             ),
                             hintText: _jadwalList.isEmpty ? 'Belum ada jadwal tersedia' : 'Pilih jadwal ajar',
+                            hintStyle: TextStyle(color: isDark ? const Color(0xFF64748B) : Colors.grey),
                           ),
                           items: _jadwalList
                               .map(
@@ -381,7 +380,10 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                                   child: Text(
                                     _jadwalLabel(item),
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(fontSize: 13),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
                                   ),
                                 ),
                               )
@@ -399,7 +401,10 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                               Expanded(
                                 child: Text(
                                   'Jadwal tidak ditemukan untuk akun ini.',
-                                  style: GoogleFonts.inter(fontSize: 12, color: Colors.orange.shade700),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: isDark ? const Color(0xFFFBBF24) : Colors.orange.shade700,
+                                  ),
                                 ),
                               ),
                               TextButton(
@@ -411,7 +416,14 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                         ],
                         const SizedBox(height: 4),
                         const SizedBox(height: 16),
-                        Text('Tanggal', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text(
+                          'Tanggal',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: isDark ? const Color(0xFFF1F5F9) : Colors.black87,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: _pickDate,
@@ -420,25 +432,35 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
+                              color: isDark ? const Color(0xFF0F172A) : Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.blueGrey.shade100),
+                              border: Border.all(color: isDark ? const Color(0xFF475569) : Colors.blueGrey.shade100),
                             ),
                             child: Row(
                               children: [
                                 Expanded(
                                   child: Text(
                                     _formatDate(_tanggalIzin),
-                                    style: GoogleFonts.inter(fontSize: 14, color: Colors.blueGrey.shade800),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800,
+                                    ),
                                   ),
                                 ),
-                                Icon(Icons.calendar_month, color: Colors.blueGrey.shade400),
+                                Icon(Icons.calendar_month, color: isDark ? const Color(0xFF94A3B8) : Colors.blueGrey.shade400),
                               ],
                             ),
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Text('Jenis Izin', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text(
+                          'Jenis Izin',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: isDark ? const Color(0xFFF1F5F9) : Colors.black87,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Row(
                           children: [
@@ -460,31 +482,47 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        Text('Keterangan / Alasan', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text(
+                          'Keterangan / Alasan',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: isDark ? const Color(0xFFF1F5F9) : Colors.black87,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _pesanController,
                           maxLines: 5,
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                           decoration: InputDecoration(
                             hintText: 'Tuliskan alasan lengkap...',
+                            hintStyle: TextStyle(color: isDark ? const Color(0xFF64748B) : Colors.grey),
                             filled: true,
-                            fillColor: Colors.grey.shade50,
+                            fillColor: isDark ? const Color(0xFF0F172A) : Colors.grey.shade50,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.blueGrey.shade100),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.blueGrey.shade100),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.blueGrey.shade100),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.blueGrey.shade100),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(color: Colors.indigo.shade300, width: 1.4),
+                              borderSide: BorderSide(color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade300, width: 1.4),
                             ),
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Text('Bukti (Surat Dokter/Lampiran)', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
+                        Text(
+                          'Bukti (Surat Dokter/Lampiran)',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: isDark ? const Color(0xFFF1F5F9) : Colors.black87,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: _isPickingFile ? null : _pickFile,
@@ -493,13 +531,20 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 14),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
+                              color: isDark ? const Color(0xFF0F172A) : Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.indigo.shade100, style: BorderStyle.solid),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF475569) : Colors.indigo.shade100,
+                                style: BorderStyle.solid,
+                              ),
                             ),
                             child: Column(
                               children: [
-                                Icon(Icons.file_upload_outlined, size: 34, color: Colors.blueGrey.shade400),
+                                Icon(
+                                  Icons.file_upload_outlined,
+                                  size: 34,
+                                  color: isDark ? const Color(0xFF818CF8) : Colors.blueGrey.shade400,
+                                ),
                                 const SizedBox(height: 8),
                                 Text(
                                   _isPickingFile
@@ -508,7 +553,7 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                                   textAlign: TextAlign.center,
                                   style: GoogleFonts.inter(
                                     fontSize: 13,
-                                    color: Colors.blueGrey.shade700,
+                                    color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade700,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -516,7 +561,10 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                                 Text(
                                   'Format: jpg, jpeg, png, pdf, doc, docx (Maks: 2MB)',
                                   textAlign: TextAlign.center,
-                                  style: GoogleFonts.inter(fontSize: 11, color: Colors.blueGrey.shade500),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: isDark ? const Color(0xFF94A3B8) : Colors.blueGrey.shade500,
+                                  ),
                                 ),
                                 if (_selectedFileName != null) ...[
                                   const SizedBox(height: 8),
@@ -527,6 +575,9 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                                         _selectedFileName = null;
                                       });
                                     },
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: isDark ? const Color(0xFFF87171) : Colors.red.shade700,
+                                    ),
                                     child: const Text('Hapus lampiran'),
                                   ),
                                 ],
@@ -535,158 +586,48 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                           ),
                         ),
                         const SizedBox(height: 18),
+                        PremiumButton(
+                          label: 'Kirim Pengajuan Izin',
+                          isLoading: _isSubmitting,
+                          onPressed: _submitIzin,
+                        ),
+                        const SizedBox(height: 14),
                         SizedBox(
                           width: double.infinity,
                           height: 52,
-                          child: ElevatedButton(
-                            onPressed: _isSubmitting ? null : _submitIzin,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.indigo.shade600,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                              elevation: 0,
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const RiwayatIzinScreen()),
+                              );
+                            },
+                            icon: const Icon(Icons.history, size: 20),
+                            label: Text(
+                              'Lihat Riwayat Izin',
+                              style: GoogleFonts.inter(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            child: _isSubmitting
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : Text(
-                                    'Kirim Pengajuan Izin',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade700,
+                              side: BorderSide(
+                                color: isDark ? const Color(0xFF475569) : Colors.indigo.shade200,
+                                width: 1.5,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        Text('Riwayat Izin', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
-                        const SizedBox(height: 10),
-                        if (_riwayatIzin.isEmpty)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.blueGrey.shade100),
-                            ),
-                            child: Text(
-                              'Belum ada riwayat izin.',
-                              style: GoogleFonts.inter(color: Colors.blueGrey.shade500),
-                            ),
-                          )
-                        else                          
-                            ..._riwayatIzin.take(5).map((item) {
-                            final bool approved = item['approval'].toString() == '1' ||
-                            item['approval'].toString().toLowerCase() == 'true';
-                            final String tanggal = item['tanggal_izin']?.toString() ?? '-';
-                            final String judul = item['judul']?.toString() ?? '-';
-                            final String pesan = item['pesan']?.toString() ?? '-';
-                            return Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.blueGrey.shade100),
-                              ),
-                              child: Row(
-                                children: [                                                         
-                                  Container(
-                                    width: 10,
-                                    height: 10,
-                                    margin: const EdgeInsets.only(right: 10),
-                                    decoration: BoxDecoration(
-                                      color: approved ? Colors.green : Colors.orange,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '$judul • $tanggal',
-                                            style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
-                                          ),
-                                          const SizedBox(height: 2),
-                                        Text(
-                                          pesan,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: GoogleFonts.inter(fontSize: 12, color: Colors.blueGrey.shade600),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    approved ? 'Disetujui' : 'Menunggu',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: approved ? Colors.green.shade700 : Colors.orange.shade700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.blueGrey.shade100)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _BottomMenuItem(
-                  label: 'Jadwal',
-                  icon: Icons.home_outlined,
-                  selected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DashboardScreen()),
-                    );
-                  },
-                ),
-                _BottomMenuItem(
-                  label: 'Izin',
-                  icon: Icons.description_outlined,
-                  selected: true,
-                  onTap: () {},
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -704,16 +645,32 @@ class _ChoicePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    Color bgColor;
+    Color borderColor;
+    Color textColor;
+    
+    if (selected) {
+      bgColor = isDark ? const Color(0xFF312E81) : Colors.indigo.shade50;
+      borderColor = isDark ? const Color(0xFF6366F1) : Colors.indigo.shade300;
+      textColor = isDark ? const Color(0xFFC7D2FE) : Colors.indigo.shade700;
+    } else {
+      bgColor = isDark ? const Color(0xFF0F172A) : Colors.white;
+      borderColor = isDark ? const Color(0xFF475569) : Colors.blueGrey.shade200;
+      textColor = isDark ? const Color(0xFF94A3B8) : Colors.blueGrey.shade700;
+    }
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? Colors.indigo.shade50 : Colors.white,
+          color: bgColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? Colors.indigo.shade300 : Colors.blueGrey.shade200,
+            color: borderColor,
             width: 1.2,
           ),
         ),
@@ -722,52 +679,11 @@ class _ChoicePill extends StatelessWidget {
           label,
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(
-            color: selected ? Colors.indigo.shade700 : Colors.blueGrey.shade700,
+            color: textColor,
             fontWeight: FontWeight.w600,
           ),
         ),
       ),
     );
   }
-}
-
-class _BottomMenuItem extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _BottomMenuItem({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? Colors.indigo.shade700 : Colors.blueGrey.shade400;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+}

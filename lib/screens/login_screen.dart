@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
-import 'dashboard_screen.dart';
+import '../widgets/premium_button.dart';
+import 'main_navigation_wrapper.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -31,11 +32,12 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     final success = await Provider.of<AuthProvider>(context, listen: false)
         .login(_nikController.text.trim(), _passwordController.text);
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (success) {
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
+          context, MaterialPageRoute(builder: (_) => const MainNavigationWrapper()));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login Gagal. Periksa NIK dan Password!')),
@@ -59,7 +61,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: 1),
@@ -70,7 +75,9 @@ class _LoginScreenState extends State<LoginScreen> {
             curve: Curves.easeInOut,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [const Color(0xFF4F46E5), const Color(0xFF7C3AED), Colors.indigo.shade300],
+                colors: isDark
+                    ? [const Color(0xFF0F172A), const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                    : [const Color(0xFF4F46E5), const Color(0xFF7C3AED), Colors.indigo.shade300],
                 begin: _begin,
                 end: _end,
               ),
@@ -85,11 +92,11 @@ class _LoginScreenState extends State<LoginScreen> {
               width: 520,
               padding: const EdgeInsets.all(28.0),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.92),
+                color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.94) : Colors.white.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.15),
                     blurRadius: 30,
                     offset: const Offset(0, 10),
                   )
@@ -102,29 +109,52 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     CircleAvatar(
                       radius: 36,
-                      backgroundColor: Colors.indigo.shade50,
-                      child: Icon(Icons.qr_code_scanner_rounded, size: 40, color: Colors.indigo.shade700),
+                      backgroundColor: isDark ? const Color(0xFF334155) : Colors.indigo.shade50,
+                      child: Icon(
+                        Icons.qr_code_scanner_rounded, 
+                        size: 40, 
+                        color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade700,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     Text(
                       'Absensi Smart SMK',
-                      style: GoogleFonts.outfit(fontSize: 26, fontWeight: FontWeight.w700, color: Colors.indigo.shade900),
+                      style: GoogleFonts.outfit(
+                        fontSize: 26, 
+                        fontWeight: FontWeight.w700, 
+                        color: isDark ? const Color(0xFFF1F5F9) : Colors.indigo.shade900,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       'Masuk menggunakan NIK/NIS Anda',
-                      style: GoogleFonts.inter(color: Colors.grey.shade600),
+                      style: GoogleFonts.inter(
+                        color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _nikController,
                       keyboardType: TextInputType.number,
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                       decoration: InputDecoration(
                         labelText: 'NIK / NIS',
-                        prefixIcon: const Icon(Icons.badge),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600),
+                        prefixIcon: Icon(Icons.badge, color: isDark ? const Color(0xFF94A3B8) : Colors.indigo.shade600),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade600, width: 1.5),
+                        ),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: isDark ? const Color(0xFF0F172A) : Colors.grey.shade50,
                       ),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return 'NIK/NIS harus diisi';
@@ -135,16 +165,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: !_showPassword,
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                       decoration: InputDecoration(
                         labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock),
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600),
+                        prefixIcon: Icon(Icons.lock, color: isDark ? const Color(0xFF94A3B8) : Colors.indigo.shade600),
                         suffixIcon: IconButton(
-                          icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
+                          icon: Icon(
+                            _showPassword ? Icons.visibility_off : Icons.visibility,
+                            color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                          ),
                           onPressed: () => setState(() => _showPassword = !_showPassword),
                         ),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade600, width: 1.5),
+                        ),
                         filled: true,
-                        fillColor: Colors.grey.shade50,
+                        fillColor: isDark ? const Color(0xFF0F172A) : Colors.grey.shade50,
                       ),
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Password harus diisi';
@@ -152,28 +198,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                     const SizedBox(height: 22),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: _isLoading ? null : _login,
-                        child: Ink(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [Colors.indigo.shade700, Colors.purple.shade400]),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Container(
-                            alignment: Alignment.center,
-                            child: _isLoading
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : Text('Masuk', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
-                          ),
-                        ),
-                      ),
+                    PremiumButton(
+                      label: 'Masuk',
+                      isLoading: _isLoading,
+                      onPressed: _login,
                     ),
                     const SizedBox(height: 12),
                     Center(
@@ -181,7 +209,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _forgotPassword,
                         child: Text(
                           'Lupa Password?',
-                          style: GoogleFonts.inter(color: Colors.indigo.shade700),
+                          style: GoogleFonts.inter(
+                            color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade700,
+                          ),
                         ),
                       ),
                     ),
