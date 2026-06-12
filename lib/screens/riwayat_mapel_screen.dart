@@ -69,16 +69,18 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.blueGrey.shade50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
         elevation: 0,
-        iconTheme: IconThemeData(color: Colors.blueGrey.shade800),
+        iconTheme: IconThemeData(color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800),
         title: Text(
           'Riwayat ${widget.mapelName}',
           style: GoogleFonts.outfit(
-            color: Colors.blueGrey.shade800,
+            color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -90,12 +92,12 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.history, size: 64, color: Colors.blueGrey.shade200),
+                      Icon(Icons.history, size: 64, color: isDark ? const Color(0xFF334155) : Colors.blueGrey.shade200),
                       const SizedBox(height: 16),
                       Text(
                         'Belum ada riwayat mengajar\nuntuk mata pelajaran ini.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(color: Colors.blueGrey.shade500),
+                        style: GoogleFonts.inter(color: isDark ? const Color(0xFF94A3B8) : Colors.blueGrey.shade500),
                       ),
                     ],
                   ),
@@ -115,6 +117,7 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
+                      color: Theme.of(context).cardColor,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 0,
                       child: Padding(
@@ -128,14 +131,14 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: Colors.indigo.shade50,
+                                    color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : Colors.indigo.shade50,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     tanggal,
                                     style: GoogleFonts.inter(
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.indigo.shade700,
+                                      color: isDark ? const Color(0xFFC7D2FE) : Colors.indigo.shade700,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -143,14 +146,18 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: isSelesai ? Colors.green.shade50 : Colors.amber.shade50,
+                                    color: isSelesai
+                                        ? (isDark ? const Color(0xFF064E3B) : Colors.green.shade50)
+                                        : (isDark ? const Color(0xFF78350F) : Colors.amber.shade50),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     isSelesai ? 'Selesai' : 'Sedang Mengajar',
                                     style: GoogleFonts.inter(
                                       fontWeight: FontWeight.bold,
-                                      color: isSelesai ? Colors.green.shade700 : Colors.amber.shade700,
+                                      color: isSelesai
+                                          ? (isDark ? const Color(0xFFA7F3D0) : Colors.green.shade700)
+                                          : (isDark ? const Color(0xFFFDE68A) : Colors.amber.shade700),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -158,8 +165,21 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            Text('Kelas $kelas', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text(ruangan, style: GoogleFonts.inter(color: Colors.blueGrey.shade600, fontSize: 13)),
+                            Text(
+                              'Kelas $kelas',
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: isDark ? const Color(0xFFF1F5F9) : Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              ruangan,
+                              style: GoogleFonts.inter(
+                                color: isDark ? const Color(0xFF94A3B8) : Colors.blueGrey.shade600,
+                                fontSize: 13,
+                              ),
+                            ),
                             const SizedBox(height: 16),
                             Row(
                               children: [
@@ -167,14 +187,27 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: Colors.blueGrey.shade50,
+                                      color: isDark ? const Color(0xFF0F172A) : Colors.blueGrey.shade50,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('Masuk', style: GoogleFonts.inter(fontSize: 11, color: Colors.blueGrey.shade500)),
-                                        Text(jamMasuk, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        Text(
+                                          'Masuk',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11,
+                                            color: isDark ? const Color(0xFF64748B) : Colors.blueGrey.shade500,
+                                          ),
+                                        ),
+                                        Text(
+                                          jamMasuk,
+                                          style: GoogleFonts.outfit(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: isDark ? const Color(0xFFF1F5F9) : Colors.black87,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -184,14 +217,27 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: Colors.blueGrey.shade50,
+                                      color: isDark ? const Color(0xFF0F172A) : Colors.blueGrey.shade50,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('Keluar', style: GoogleFonts.inter(fontSize: 11, color: Colors.blueGrey.shade500)),
-                                        Text(jamKeluar, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        Text(
+                                          'Keluar',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11,
+                                            color: isDark ? const Color(0xFF64748B) : Colors.blueGrey.shade500,
+                                          ),
+                                        ),
+                                        Text(
+                                          jamKeluar,
+                                          style: GoogleFonts.outfit(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: isDark ? const Color(0xFFF1F5F9) : Colors.black87,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -217,8 +263,8 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                                 icon: const Icon(Icons.people, size: 18),
                                 label: const Text('Absen Murid'),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.indigo.shade50,
-                                  foregroundColor: Colors.indigo.shade700,
+                                  backgroundColor: isDark ? const Color(0xFF312E81) : Colors.indigo.shade50,
+                                  foregroundColor: isDark ? const Color(0xFFC7D2FE) : Colors.indigo.shade700,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                   padding: const EdgeInsets.symmetric(vertical: 10),

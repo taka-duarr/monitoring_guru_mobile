@@ -8,11 +8,11 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
-import 'izin_guru_screen.dart';
 import 'riwayat_mapel_screen.dart';
 import 'absen_murid_screen.dart';
 import 'scanner_screen.dart';
 import 'profile_screen.dart';
+import 'main_navigation_wrapper.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -74,22 +74,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             'Konfirmasi Keluar',
-            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.indigo.shade900),
+            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFF1F5F9) : Colors.indigo.shade900),
           ),
           content: Text(
             'Apakah Anda yakin ingin keluar dari aplikasi?',
-            style: GoogleFonts.inter(color: Colors.grey.shade700),
+            style: GoogleFonts.inter(color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'Batal',
-                style: GoogleFonts.inter(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontWeight: FontWeight.w600),
               ),
             ),
             ElevatedButton(
@@ -118,12 +119,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final isKetua = auth.role.toLowerCase() == 'ketuakelas';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final String kelasName = _jadwalList.isNotEmpty && _jadwalList[0]['kelas'] != null
+        ? (_jadwalList[0]['kelas']['name']?.toString() ?? '-')
+        : '-';
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('Dashboard', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.indigo.shade900)),
-        backgroundColor: Colors.white,
+        title: Text('Dashboard', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: isDark ? const Color(0xFFF1F5F9) : Colors.indigo.shade900)),
+        backgroundColor: Theme.of(context).cardColor,
         elevation: 0,
         actions: [
           IconButton(
@@ -145,18 +150,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     // Profile Card
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                        );
+                        final nav = MainNavigationWrapper.of(context);
+                        if (nav != null) {
+                          final isGuru = Provider.of<AuthProvider>(context, listen: false).role.toLowerCase() == 'guru';
+                          nav.currentIndex = isGuru ? 2 : 1;
+                        } else {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                          );
+                        }
                       },
                       child: Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [Colors.indigo.shade600, Colors.purple.shade600]),
+                          gradient: LinearGradient(
+                            colors: isDark 
+                                ? [const Color(0xFF312E81), const Color(0xFF4C1D95)] 
+                                : [Colors.indigo.shade600, Colors.purple.shade600]
+                          ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
-                            BoxShadow(color: Colors.indigo.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 5))
+                            BoxShadow(
+                              color: isDark ? Colors.black.withValues(alpha: 0.35) : Colors.indigo.withValues(alpha: 0.3), 
+                              blurRadius: 15, 
+                              offset: const Offset(0, 5)
+                            )
                           ],
                         ),
                         child: Row(
@@ -190,7 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                                   ),
                                   Text(
-                                    isKetua ? 'Ketua Kelas' : 'Guru Pengajar',
+                                    isKetua ? 'Ketua Kelas $kelasName' : 'Guru Pengajar',
                                     style: GoogleFonts.inter(color: Colors.indigo.shade100),
                                   ),
                                 ],
@@ -203,7 +222,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 30),
                     
 
-                    Text('Jadwal Hari Ini', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade800)),
+                    Text(
+                      'Jadwal Hari Ini', 
+                      style: GoogleFonts.outfit(
+                        fontSize: 20, 
+                        fontWeight: FontWeight.bold, 
+                        color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800
+                      )
+                    ),
                     const SizedBox(height: 16),
                     
                     _jadwalList.isEmpty
@@ -223,10 +249,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               final hasKeluar = j['absen_keluar'] != null;
                               final isSelesai = hasMasuk && hasKeluar;
 
-                              return Card(
+                              // Status-based accent line color definition
+                              Color statusColor;
+                              if (isSelesai) {
+                                statusColor = isDark ? const Color(0xFF10B981) : const Color(0xFF10B981); // Emerald Green
+                              } else if (hasMasuk) {
+                                statusColor = isDark ? const Color(0xFFF59E0B) : const Color(0xFFF59E0B); // Amber Yellow
+                              } else {
+                                statusColor = isDark ? const Color(0xFF6366F1) : const Color(0xFF4F46E5); // Indigo Blue
+                              }
+
+                              return Container(
                                 margin: const EdgeInsets.only(bottom: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                elevation: 0,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).cardColor,
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(16),
+                                    bottomRight: Radius.circular(16),
+                                    topLeft: Radius.circular(6),
+                                    bottomLeft: Radius.circular(6),
+                                  ),
+                                  border: Border(
+                                    left: BorderSide(color: statusColor, width: 6),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.03),
+                                      blurRadius: 15,
+                                      offset: const Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
@@ -244,25 +297,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           );
                                         }
                                       } : null,
+                                      borderRadius: const BorderRadius.only(
+                                        topRight: Radius.circular(16),
+                                        bottomRight: Radius.circular(16),
+                                      ),
                                       child: ListTile(
                                         contentPadding: const EdgeInsets.all(16),
                                         leading: Container(
                                           padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(12)),
-                                          child: const Icon(Icons.book, color: Colors.indigo),
+                                          decoration: BoxDecoration(
+                                            color: isDark ? const Color(0xFF334155) : Colors.indigo.shade50, 
+                                            borderRadius: BorderRadius.circular(12)
+                                          ),
+                                          child: Icon(Icons.book, color: isDark ? const Color(0xFF818CF8) : Colors.indigo),
                                         ),
                                         title: Row(
                                           children: [
-                                            Expanded(child: Text(j['mapel']['name'] ?? 'Mapel', style: GoogleFonts.outfit(fontWeight: FontWeight.bold))),
-                                            if (!isKetua) const Icon(Icons.chevron_right, color: Colors.indigo, size: 20),
+                                            Expanded(
+                                              child: Text(
+                                                j['mapel']['name'] ?? 'Mapel', 
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: isDark ? const Color(0xFFF1F5F9) : Colors.black87
+                                                )
+                                              )
+                                            ),
+                                            if (!isKetua) Icon(Icons.chevron_right, color: isDark ? const Color(0xFF818CF8) : Colors.indigo, size: 20),
                                           ],
                                         ),
                                         subtitle: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             const SizedBox(height: 4),
-                                            Text('${j['jam_mulai']} - ${j['jam_selesai']}'),
-                                            Text('Kelas: ${j['kelas']['name']} • Ruang: ${j['ruangan']['name']}'),
+                                            Text(
+                                              '${j['jam_mulai']} - ${j['jam_selesai']}',
+                                              style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.black54),
+                                            ),
+                                            Text(
+                                              'Kelas: ${j['kelas']['name']}',
+                                              style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.black54),
+                                            ),
+                                            Text(
+                                              'Ruang: ${j['ruangan']['name']}',
+                                              style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.black54),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -272,25 +350,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                                         child: Column(
                                           children: [
-                                            const Divider(color: Colors.black12, height: 1),
+                                            Divider(color: isDark ? Colors.white12 : Colors.black12, height: 1),
                                             const SizedBox(height: 12),
                                             Row(
                                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                                               children: [
                                                 Row(
                                                   children: [
-                                                    Icon(Icons.login, size: 16, color: Colors.teal.shade500),
+                                                    Icon(Icons.login, size: 16, color: isDark ? const Color(0xFF34D399) : Colors.teal.shade500),
                                                     const SizedBox(width: 6),
-                                                    Text('Masuk: ', style: GoogleFonts.inter(fontSize: 13, color: Colors.black54)),
-                                                    Text(j['absen_masuk']['jam_masuk'] ?? '-', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
+                                                    Text('Masuk: ', style: GoogleFonts.inter(fontSize: 13, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+                                                    Text(
+                                                      j['absen_masuk']['jam_masuk'] ?? '-', 
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 13, 
+                                                        fontWeight: FontWeight.bold,
+                                                        color: isDark ? Colors.white : const Color(0xFF1E293B)
+                                                      )
+                                                    ),
                                                   ],
                                                 ),
                                                 Row(
                                                   children: [
-                                                    Icon(Icons.logout, size: 16, color: hasKeluar ? Colors.red.shade500 : Colors.grey),
+                                                    Icon(
+                                                      Icons.logout, 
+                                                      size: 16, 
+                                                      color: hasKeluar 
+                                                          ? (isDark ? const Color(0xFFF87171) : Colors.red.shade500) 
+                                                          : (isDark ? const Color(0xFF475569) : Colors.grey.shade400),
+                                                    ),
                                                     const SizedBox(width: 6),
-                                                    Text('Keluar: ', style: GoogleFonts.inter(fontSize: 13, color: Colors.black54)),
-                                                    Text(hasKeluar ? (j['absen_keluar']['jam_keluar'] ?? '-') : '-', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: hasKeluar ? Colors.black87 : Colors.grey)),
+                                                    Text('Keluar: ', style: GoogleFonts.inter(fontSize: 13, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569))),
+                                                    Text(
+                                                      hasKeluar ? (j['absen_keluar']['jam_keluar'] ?? '-') : '-', 
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 13, 
+                                                        fontWeight: FontWeight.bold, 
+                                                        color: hasKeluar 
+                                                            ? (isDark ? Colors.white : const Color(0xFF1E293B)) 
+                                                            : (isDark ? const Color(0xFF475569) : Colors.grey.shade500)
+                                                      )
+                                                    ),
                                                   ],
                                                 ),
                                               ],
@@ -316,10 +416,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                       icon: const Icon(Icons.people, size: 18),
                                                       label: const Text('Absen Murid'),
                                                       style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.indigo.shade50,
-                                                        foregroundColor: Colors.indigo.shade700,
+                                                        backgroundColor: isDark ? const Color(0xFF334155) : Colors.indigo.shade50,
+                                                        foregroundColor: isDark ? const Color(0xFFE2E8F0) : Colors.indigo.shade700,
                                                         elevation: 0,
-                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                        padding: const EdgeInsets.symmetric(vertical: 12),
                                                       ),
                                                     ),
                                                   ),
@@ -337,10 +438,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                     icon: Icon(isSelesai ? Icons.check_circle : Icons.qr_code_scanner, size: 18),
                                                     label: Text(isSelesai ? 'Selesai' : 'Scan QR KELUAR'),
                                                     style: ElevatedButton.styleFrom(
-                                                      backgroundColor: isSelesai ? Colors.grey.shade300 : Colors.red.shade50,
-                                                      foregroundColor: isSelesai ? Colors.grey.shade600 : Colors.red.shade700,
+                                                      backgroundColor: isSelesai 
+                                                          ? (isDark ? const Color(0xFF1E293B) : Colors.grey.shade100) 
+                                                          : (isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.2) : Colors.red.shade50),
+                                                      foregroundColor: isSelesai 
+                                                          ? (isDark ? const Color(0xFF64748B) : Colors.grey.shade600) 
+                                                          : (isDark ? const Color(0xFFFCA5A5) : Colors.red.shade700),
                                                       elevation: 0,
-                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                      padding: const EdgeInsets.symmetric(vertical: 12),
                                                     ),
                                                   ),
                                                 ),
@@ -355,10 +461,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         child: isKetua
                                             ? ElevatedButton.icon(
                                                 icon: const Icon(Icons.qr_code, color: Colors.white, size: 20),
-                                                label: Text(hasMasuk ? 'Generate QR KELUAR' : 'Generate QR MASUK', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+                                                label: Text(
+                                                  hasMasuk ? 'Generate QR KELUAR' : 'Generate QR MASUK', 
+                                                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)
+                                                ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: hasMasuk ? Colors.amber.shade600 : Colors.blue.shade600,
-                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                  backgroundColor: hasMasuk 
+                                                      ? (isDark ? const Color(0xFFD97706) : Colors.amber.shade600) 
+                                                      : Theme.of(context).primaryColor,
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                                   elevation: 0,
                                                 ),
@@ -368,10 +479,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               )
                                             : !hasMasuk ? ElevatedButton.icon(
                                                 icon: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 20),
-                                                label: Text(hasMasuk ? 'Scan QR KELUAR' : 'Scan QR MASUK', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)),
+                                                label: Text(
+                                                  'Scan QR MASUK', 
+                                                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.white)
+                                                ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: hasMasuk ? Colors.amber.shade600 : Colors.teal.shade500,
-                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                  backgroundColor: Theme.of(context).primaryColor,
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                                   elevation: 0,
                                                 ),
@@ -390,59 +504,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
             ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.blueGrey.shade100)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _BottomMenuItem(
-                  label: 'Jadwal',
-                  icon: Icons.home_outlined,
-                  selected: true,
-                  onTap: () {},
-                ),
-                if (!isKetua)
-                  _BottomMenuItem(
-                    label: 'Izin',
-                    icon: Icons.description_outlined,
-                    selected: false,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const IzinGuruScreen()),
-                      );
-                    },
-                  ),
-                _BottomMenuItem(
-                  label: 'Profil',
-                  icon: Icons.person_outline,
-                  selected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -495,10 +556,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
           child: Column(
@@ -508,21 +570,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.blueGrey.shade200,
+                  color: isDark ? const Color(0xFF334155) : Colors.blueGrey.shade200,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
               const SizedBox(height: 20),
-              Text(mapelName, textAlign: TextAlign.center, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade800)),
+              Text(
+                mapelName, 
+                textAlign: TextAlign.center, 
+                style: GoogleFonts.outfit(
+                  fontSize: 22, 
+                  fontWeight: FontWeight.bold, 
+                  color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800
+                )
+              ),
               const SizedBox(height: 6),
-              Text(wasMasuk ? 'Tunjukkan QR ini agar Guru bisa absen KELUAR' : 'Tunjukkan QR ini agar Guru bisa absen MASUK', textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, color: Colors.blueGrey.shade400)),
+              Text(
+                wasMasuk ? 'Tunjukkan QR ini agar Guru bisa absen KELUAR' : 'Tunjukkan QR ini agar Guru bisa absen MASUK', 
+                textAlign: TextAlign.center, 
+                style: GoogleFonts.inter(
+                  fontSize: 13, 
+                  color: isDark ? const Color(0xFF94A3B8) : Colors.blueGrey.shade400
+                )
+              ),
               const SizedBox(height: 28),
               Center(
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.blueGrey.shade100, width: 4),
+                    color: Colors.white, // keep white background for scannable QR contrast
+                    border: Border.all(color: isDark ? const Color(0xFF475569) : Colors.blueGrey.shade100, width: 4),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 4))],
                   ),
@@ -539,8 +616,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueGrey.shade100,
-                    foregroundColor: Colors.blueGrey.shade700,
+                    backgroundColor: isDark ? const Color(0xFF334155) : Colors.blueGrey.shade100,
+                    foregroundColor: isDark ? const Color(0xFFE2E8F0) : Colors.blueGrey.shade700,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -555,46 +632,5 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ).then((_) {
       pollingTimer?.cancel();
     });
-  }
-}
-
-class _BottomMenuItem extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _BottomMenuItem({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? Colors.indigo.shade700 : Colors.blueGrey.shade400;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

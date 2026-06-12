@@ -4,8 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import '../providers/auth_provider.dart';
-import 'dashboard_screen.dart';
-import 'izin_guru_screen.dart';
+import '../widgets/premium_button.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -124,22 +123,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             'Konfirmasi Keluar',
-            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.indigo.shade900),
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: isDark ? const Color(0xFFF1F5F9) : Colors.indigo.shade900,
+            ),
           ),
           content: Text(
             'Apakah Anda yakin ingin keluar dari aplikasi?',
-            style: GoogleFonts.inter(color: Colors.grey.shade700),
+            style: GoogleFonts.inter(
+              color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'Batal',
-                style: GoogleFonts.inter(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                style: GoogleFonts.inter(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             ElevatedButton(
@@ -150,7 +158,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red.shade600,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
               child: Text(
@@ -183,18 +191,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final isKetua = auth.role.toLowerCase() == 'ketuakelas';
     final roleLabel = isKetua ? 'Ketua Kelas' : 'Guru Pengajar';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Profil Pengguna',
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.bold,
-            color: Colors.indigo.shade900,
+            color: isDark ? const Color(0xFFF1F5F9) : Colors.indigo.shade900,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
         elevation: 0,
         actions: const [],
       ),
@@ -216,7 +225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.indigo.withValues(alpha: 0.15),
+                            color: Colors.indigo.withValues(alpha: isDark ? 0.3 : 0.15),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           )
@@ -229,20 +238,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 fit: BoxFit.cover,
                                 errorBuilder: (c, o, s) {
                                   return Container(
-                                    color: Colors.indigo.shade50,
-                                    child: Icon(Icons.person, size: 60, color: Colors.indigo.shade400),
+                                    color: isDark ? const Color(0xFF334155) : Colors.indigo.shade50,
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 60,
+                                      color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade400,
+                                    ),
                                   );
                                 },
                               )
                             : Container(
-                                color: Colors.indigo.shade50,
+                                color: isDark ? const Color(0xFF334155) : Colors.indigo.shade50,
                                 child: Center(
                                   child: Text(
                                     auth.name.isNotEmpty ? auth.name[0].toUpperCase() : '?',
                                     style: GoogleFonts.outfit(
                                       fontSize: 48,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.indigo.shade700,
+                                      color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade700,
                                     ),
                                   ),
                                 ),
@@ -257,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: _pickPhoto,
                           child: CircleAvatar(
                             radius: 20,
-                            backgroundColor: Colors.indigo.shade700,
+                            backgroundColor: Theme.of(context).primaryColor,
                             child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
                           ),
                         ),
@@ -268,28 +281,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               Text(
                 auth.name,
-                style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.indigo.shade900),
+                style: GoogleFonts.outfit(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? const Color(0xFFF1F5F9) : Colors.indigo.shade900,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 roleLabel,
-                style: GoogleFonts.inter(fontSize: 14, color: Colors.indigo.shade600, fontWeight: FontWeight.w500),
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 12),
               if (!_isEditing)
                 TextButton.icon(
                   onPressed: () => setState(() => _isEditing = true),
-                  icon: const Icon(Icons.edit_outlined, size: 16, color: Colors.indigo),
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    size: 16,
+                    color: isDark ? const Color(0xFF818CF8) : Colors.indigo,
+                  ),
                   label: Text(
                     'Edit Profil',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: Colors.indigo.shade700,
+                      color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade700,
                     ),
                   ),
                   style: TextButton.styleFrom(
-                    backgroundColor: Colors.indigo.shade50,
+                    backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.indigo.shade50,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
@@ -300,11 +325,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(22),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
+                      color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.03),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     )
@@ -315,7 +340,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(
                       'Informasi Personal',
-                      style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.indigo.shade900),
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? const Color(0xFFF1F5F9) : Colors.indigo.shade900,
+                      ),
                     ),
                     const SizedBox(height: 18),
 
@@ -323,16 +352,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     TextFormField(
                       initialValue: auth.nik.isNotEmpty ? auth.nik : '-',
                       enabled: false,
+                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.black87),
                       decoration: InputDecoration(
                         labelText: isKetua ? 'NIS (Nomor Induk Siswa)' : 'NIK (Nomor Induk Karyawan)',
-                        prefixIcon: const Icon(Icons.badge_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600),
+                        prefixIcon: Icon(Icons.badge_outlined, color: isDark ? const Color(0xFF94A3B8) : Colors.indigo.shade600),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                        ),
                         disabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : Colors.grey.shade200),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade100,
+                        fillColor: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.5) : Colors.grey.shade100,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -341,16 +375,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     TextFormField(
                       initialValue: roleLabel,
                       enabled: false,
+                      style: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.black87),
                       decoration: InputDecoration(
                         labelText: 'Jabatan / Role',
-                        prefixIcon: const Icon(Icons.work_outline),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600),
+                        prefixIcon: Icon(Icons.work_outline, color: isDark ? const Color(0xFF94A3B8) : Colors.indigo.shade600),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                        ),
                         disabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade200),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : Colors.grey.shade200),
                         ),
                         filled: true,
-                        fillColor: Colors.grey.shade100,
+                        fillColor: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.5) : Colors.grey.shade100,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -359,12 +398,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     TextFormField(
                       controller: _nameController,
                       enabled: _isEditing,
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                       decoration: InputDecoration(
                         labelText: 'Nama Lengkap',
-                        prefixIcon: const Icon(Icons.person_outline),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600),
+                        prefixIcon: Icon(Icons.person_outline, color: isDark ? const Color(0xFF94A3B8) : Colors.indigo.shade600),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade600, width: 1.5),
+                        ),
                         filled: true,
-                        fillColor: _isEditing ? Colors.white : Colors.grey.shade50,
+                        fillColor: _isEditing
+                            ? (isDark ? const Color(0xFF0F172A) : Colors.white)
+                            : (isDark ? const Color(0xFF0F172A).withValues(alpha: 0.7) : Colors.grey.shade50),
                       ),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return 'Nama Lengkap harus diisi';
@@ -378,12 +432,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       controller: _phoneController,
                       enabled: _isEditing,
                       keyboardType: TextInputType.phone,
+                      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                       decoration: InputDecoration(
                         labelText: 'Nomor Telepon',
-                        prefixIcon: const Icon(Icons.phone_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600),
+                        prefixIcon: Icon(Icons.phone_outlined, color: isDark ? const Color(0xFF94A3B8) : Colors.indigo.shade600),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade600, width: 1.5),
+                        ),
                         filled: true,
-                        fillColor: _isEditing ? Colors.white : Colors.grey.shade50,
+                        fillColor: _isEditing
+                            ? (isDark ? const Color(0xFF0F172A) : Colors.white)
+                            : (isDark ? const Color(0xFF0F172A).withValues(alpha: 0.7) : Colors.grey.shade50),
                       ),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return 'Nomor Telepon harus diisi';
@@ -397,12 +466,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       TextFormField(
                         controller: _passwordController,
                         obscureText: true,
+                        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                         decoration: InputDecoration(
                           labelText: 'Password Baru (Kosongkan jika tidak diubah)',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          labelStyle: TextStyle(color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600),
+                          prefixIcon: Icon(Icons.lock_outline, color: isDark ? const Color(0xFF94A3B8) : Colors.indigo.shade600),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade600, width: 1.5),
+                          ),
                           filled: true,
-                          fillColor: Colors.white,
+                          fillColor: isDark ? const Color(0xFF0F172A) : Colors.white,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -422,28 +504,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          side: BorderSide(color: isDark ? const Color(0xFF475569) : Colors.grey.shade300),
+                          foregroundColor: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700,
                         ),
                         child: Text('Batal', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: ElevatedButton(
-                        onPressed: _isSaving ? null : _saveProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo.shade700,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
-                        ),
-                        child: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : Text('Simpan', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                      child: PremiumButton(
+                        label: 'Simpan',
+                        isLoading: _isSaving,
+                        onPressed: _saveProfile,
                       ),
                     ),
                   ],
@@ -456,20 +528,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
+                      color: isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.2) : Colors.red.shade50,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.red.shade100),
+                      border: Border.all(color: isDark ? const Color(0xFFB91C1C).withValues(alpha: 0.4) : Colors.red.shade100),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.logout_rounded, color: Colors.red.shade700),
+                        Icon(Icons.logout_rounded, color: isDark ? const Color(0xFFFCA5A5) : Colors.red.shade700),
                         const SizedBox(width: 10),
                         Text(
                           'Keluar dari Akun',
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.bold,
-                            color: Colors.red.shade700,
+                            color: isDark ? const Color(0xFFFCA5A5) : Colors.red.shade700,
                             fontSize: 15,
                           ),
                         ),
@@ -481,100 +553,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 20),
             ],
           ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.blueGrey.shade100)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _BottomMenuItem(
-                  label: 'Jadwal',
-                  icon: Icons.home_outlined,
-                  selected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DashboardScreen()),
-                    );
-                  },
-                ),
-                if (!isKetua)
-                  _BottomMenuItem(
-                    label: 'Izin',
-                    icon: Icons.description_outlined,
-                    selected: false,
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const IzinGuruScreen()),
-                      );
-                    },
-                  ),
-                _BottomMenuItem(
-                  label: 'Profil',
-                  icon: Icons.person_outline,
-                  selected: true,
-                  onTap: () {},
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BottomMenuItem extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _BottomMenuItem({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? Colors.indigo.shade700 : Colors.blueGrey.shade400;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
         ),
       ),
     );

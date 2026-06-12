@@ -43,6 +43,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Scan QR Absensi', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
@@ -67,7 +69,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               width: 250,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.teal, width: 3),
+                border: Border.all(color: primaryColor, width: 3),
                 borderRadius: BorderRadius.circular(20),
                 color: Colors.transparent,
               ),
@@ -87,8 +89,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
           if (_isProcessing)
             Container(
               color: Colors.black.withValues(alpha: 0.7),
-              child: const Center(
-                child: CircularProgressIndicator(color: Colors.teal),
+              child: Center(
+                child: CircularProgressIndicator(color: primaryColor),
               ),
             )
         ],
