@@ -6,10 +6,16 @@ class AuthProvider with ChangeNotifier {
   bool _isAuthenticated = false;
   String _role = '';
   String _name = '';
+  String _nik = '';
+  String _phone = '';
+  String _profilePhotoPath = '';
 
   bool get isAuthenticated => _isAuthenticated;
   String get role => _role;
   String get name => _name;
+  String get nik => _nik;
+  String get phone => _phone;
+  String get profilePhotoPath => _profilePhotoPath;
 
   AuthProvider() {
     _loadData();
@@ -21,7 +27,12 @@ class AuthProvider with ChangeNotifier {
     if (token != null) {
       _isAuthenticated = true;
       _role = prefs.getString('role') ?? '';
-      _name = prefs.getString('name') ?? '';
+      _nik = prefs.getString('nik') ?? '';
+      
+      // Load data kustom lokal jika ada, jika tidak pakai default
+      _name = prefs.getString('custom_name_$_nik') ?? prefs.getString('name') ?? '';
+      _phone = prefs.getString('custom_phone_$_nik') ?? prefs.getString('phone') ?? '';
+      _profilePhotoPath = prefs.getString('custom_photo_$_nik') ?? prefs.getString('profilePhotoPath') ?? '';
       notifyListeners();
     }
   }
@@ -31,13 +42,26 @@ class AuthProvider with ChangeNotifier {
       final response = await ApiService.login(nik, password);
       if (response['success'] == true) {
         final prefs = await SharedPreferences.getInstance();
+        final user = response['user'];
+        
+        // Cek data kustom lokal untuk NIK ini, jika tidak ada baru gunakan respons dari API
+        final responseName = prefs.getString('custom_name_$nik') ?? user?['name'] ?? '';
+        final responsePhone = prefs.getString('custom_phone_$nik') ?? user?['phone'] ?? user?['no_telp'] ?? '';
+        final responsePhoto = prefs.getString('custom_photo_$nik') ?? user?['foto'] ?? '';
+
         await prefs.setString('token', response['token']);
         await prefs.setString('role', response['role']);
-        await prefs.setString('name', response['user']['name']);
+        await prefs.setString('name', responseName);
+        await prefs.setString('nik', nik);
+        await prefs.setString('phone', responsePhone);
+        await prefs.setString('profilePhotoPath', responsePhoto);
 
         _isAuthenticated = true;
         _role = response['role'];
-        _name = response['user']['name'];
+        _name = responseName;
+        _nik = nik;
+        _phone = responsePhone;
+        _profilePhotoPath = responsePhoto;
         notifyListeners();
         return true;
       }
@@ -57,10 +81,47 @@ class AuthProvider with ChangeNotifier {
     await prefs.remove('token');
     await prefs.remove('role');
     await prefs.remove('name');
+    await prefs.remove('nik');
+    await prefs.remove('phone');
+    await prefs.remove('profilePhotoPath');
 
     _isAuthenticated = false;
     _role = '';
     _name = '';
+    _nik = '';
+    _phone = '';
+    _profilePhotoPath = '';
+    notifyListeners();
+  }
+
+  Future<void> updateProfile({
+    required String name,
+    required String phone,
+    String? password,
+    String? photoPath,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    _name = name;
+    _phone = phone;
+    await prefs.setString('name', name);
+    await prefs.setString('phone', phone);
+    
+    // Simpan data kustom lokal secara spesifik per NIK
+    await prefs.setString('custom_name_$_nik', name);
+    await prefs.setString('custom_phone_$_nik', phone);
+    
+    if (photoPath != null) {
+      _profilePhotoPath = photoPath;
+      await prefs.setString('profilePhotoPath', photoPath);
+      await prefs.setString('custom_photo_$_nik', photoPath);
+    }
+    
+    if (password != null && password.isNotEmpty) {
+      // Simpan password kustom lokal secara spesifik per NIK
+      await prefs.setString('custom_password_$_nik', password);
+    }
+    
     notifyListeners();
   }
 }

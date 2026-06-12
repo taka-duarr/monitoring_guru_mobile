@@ -7,7 +7,7 @@ import '../providers/auth_provider.dart';
 import 'dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -31,6 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     final success = await Provider.of<AuthProvider>(context, listen: false)
         .login(_nikController.text.trim(), _passwordController.text);
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (success) {
@@ -85,11 +86,11 @@ class _LoginScreenState extends State<LoginScreen> {
               width: 520,
               padding: const EdgeInsets.all(28.0),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.92),
+                color: Colors.white.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withValues(alpha: 0.15),
                     blurRadius: 30,
                     offset: const Offset(0, 10),
                   )

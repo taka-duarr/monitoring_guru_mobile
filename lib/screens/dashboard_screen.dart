@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +12,7 @@ import 'izin_guru_screen.dart';
 import 'riwayat_mapel_screen.dart';
 import 'absen_murid_screen.dart';
 import 'scanner_screen.dart';
+import 'profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -24,6 +26,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<dynamic> _jadwalList = [];
   bool _isLoading = true;
 
+  ImageProvider _getAvatarImage(String? path) {
+    if (path != null && path.isNotEmpty) {
+      if (path.startsWith('http') || path.startsWith('https')) {
+        return NetworkImage(path);
+      } else {
+        final file = File(path);
+        if (file.existsSync()) {
+          return FileImage(file);
+        }
+      }
+    }
+    return const AssetImage(''); // Fallback
+  }
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _fetchJadwal() async {
     try {
       final response = await ApiService.getJadwal();
+      if (!mounted) return;
       if (response['success']) {
         setState(() {
           _jadwalList = response['data'];
@@ -41,20 +58,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } catch (e) {
       debugPrint("Error fetch jadwal: $e");
     }
+    if (!mounted) return;
     setState(() => _isLoading = false);
   }
 
-  void _logout() async {
+  void _executeLogout() async {
     await Provider.of<AuthProvider>(context, listen: false).logout();
-    Navigator.pushReplacement(
-        // ignore: use_build_context_synchronously
-        context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+    if (mounted) {
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+    }
+  }
+
+  void _logout() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Konfirmasi Keluar',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.indigo.shade900),
+          ),
+          content: Text(
+            'Apakah Anda yakin ingin keluar dari aplikasi?',
+            style: GoogleFonts.inter(color: Colors.grey.shade700),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Batal',
+                style: GoogleFonts.inter(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _executeLogout();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                elevation: 0,
+              ),
+              child: Text(
+                'Keluar',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    final isKetua = auth.role == 'ketuakelas';
+    final isKetua = auth.role.toLowerCase() == 'ketuakelas';
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -80,39 +143,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Profile Card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [Colors.indigo.shade600, Colors.purple.shade600]),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(color: Colors.indigo.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 5))
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundColor: Colors.white.withOpacity(0.2),
-                            child: const Icon(Icons.person, size: 36, color: Colors.white),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Halo, ${auth.name}',
-                                  style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                                ),
-                                Text(
-                                  isKetua ? 'Ketua Kelas' : 'Guru Pengajar',
-                                  style: GoogleFonts.inter(color: Colors.indigo.shade100),
-                                ),
-                              ],
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [Colors.indigo.shade600, Colors.purple.shade600]),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(color: Colors.indigo.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 5))
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.2),
+                              ),
+                              child: ClipOval(
+                                child: auth.profilePhotoPath.isNotEmpty
+                                    ? Image(
+                                        image: _getAvatarImage(auth.profilePhotoPath),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (c, o, s) {
+                                          return const Icon(Icons.person, size: 36, color: Colors.white);
+                                        },
+                                      )
+                                    : const Icon(Icons.person, size: 36, color: Colors.white),
+                              ),
                             ),
-                          )
-                        ],
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Halo, ${auth.name}',
+                                    style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                                  ),
+                                  Text(
+                                    isKetua ? 'Ketua Kelas' : 'Guru Pengajar',
+                                    style: GoogleFonts.inter(color: Colors.indigo.shade100),
+                                  ),
+                                ],
+                              ),
+                            )
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 30),
@@ -311,7 +396,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           border: Border(top: BorderSide(color: Colors.blueGrey.shade100)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -342,6 +427,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       );
                     },
                   ),
+                _BottomMenuItem(
+                  label: 'Profil',
+                  icon: Icons.person_outline,
+                  selected: false,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -428,7 +524,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: Colors.white,
                     border: Border.all(color: Colors.blueGrey.shade100, width: 4),
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, 4))],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 4))],
                   ),
                   child: QrImageView(
                     data: payload,

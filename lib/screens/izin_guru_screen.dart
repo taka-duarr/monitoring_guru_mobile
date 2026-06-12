@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'dashboard_screen.dart';
+import 'profile_screen.dart';
 
 class IzinGuruScreen extends StatefulWidget {
   const IzinGuruScreen({super.key});
@@ -342,7 +343,7 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                       borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 18,
                           offset: const Offset(0, 8),
                         ),
@@ -652,7 +653,7 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
           border: Border(top: BorderSide(color: Colors.blueGrey.shade100)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -681,6 +682,17 @@ class _IzinGuruScreenState extends State<IzinGuruScreen> {
                   icon: Icons.description_outlined,
                   selected: true,
                   onTap: () {},
+                ),
+                _BottomMenuItem(
+                  label: 'Profil',
+                  icon: Icons.person_outline,
+                  selected: false,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                    );
+                  },
                 ),
               ],
             ),

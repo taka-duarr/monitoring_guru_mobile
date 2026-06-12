@@ -7,7 +7,7 @@ class RiwayatMapelScreen extends StatefulWidget {
   final String mapelId;
   final String mapelName;
 
-  const RiwayatMapelScreen({Key? key, required this.mapelId, required this.mapelName}) : super(key: key);
+  const RiwayatMapelScreen({super.key, required this.mapelId, required this.mapelName});
 
   @override
   State<RiwayatMapelScreen> createState() => _RiwayatMapelScreenState();

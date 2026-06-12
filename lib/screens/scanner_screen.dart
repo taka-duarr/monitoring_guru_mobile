@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 
 class ScannerScreen extends StatefulWidget {
-  const ScannerScreen({Key? key}) : super(key: key);
+  const ScannerScreen({super.key});
 
   @override
   _ScannerScreenState createState() => _ScannerScreenState();
@@ -59,7 +59,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           // Overlay UI
           Container(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
             ),
           ),
           Center(
@@ -86,7 +86,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ),
           if (_isProcessing)
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: const Center(
                 child: CircularProgressIndicator(color: Colors.teal),
               ),
