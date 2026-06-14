@@ -110,10 +110,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     CircleAvatar(
                       radius: 36,
                       backgroundColor: isDark ? const Color(0xFF334155) : Colors.indigo.shade50,
-                      child: Icon(
-                        Icons.qr_code_scanner_rounded, 
-                        size: 40, 
-                        color: isDark ? const Color(0xFF818CF8) : Colors.indigo.shade700,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          width: 48,
+                          height: 48,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),

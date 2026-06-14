@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -6,7 +7,8 @@ import 'dart:typed_data';
 
 class ApiService {
   // Mengambil Base URL dari file .env (jika tidak ada, fallback ke localhost)
-  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000/api';
+  static String get baseUrl =>
+      dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000/api';
 
   static Future<Map<String, dynamic>> login(String nik, String password) async {
     final response = await http.post(
@@ -85,7 +87,10 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, dynamic>> saveAbsenMurid(String absenMasukId, List<dynamic> murids) async {
+  static Future<Map<String, dynamic>> saveAbsenMurid(
+    String absenMasukId,
+    List<dynamic> murids,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
@@ -96,9 +101,7 @@ class ApiService {
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({
-        'murids': murids,
-      }),
+      body: jsonEncode({'murids': murids}),
     );
 
     return jsonDecode(response.body);
@@ -127,54 +130,87 @@ class ApiService {
 
     final response = await http.get(
       Uri.parse('$baseUrl/izin'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
     );
 
     return jsonDecode(response.body);
   }
 
   static Future<Map<String, dynamic>> submitIzinGuru({
-  required Map<String, String> data,
-  String? filePath,
-  Uint8List? fileBytes,
-  String? fileName,
-}) async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('token');
+    required Map<String, String> data,
+    String? filePath,
+    Uint8List? fileBytes,
+    String? fileName,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
 
-  final request = http.MultipartRequest(
-    'POST',
-    Uri.parse('$baseUrl/izin'),
-  );
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/izin'));
 
-  request.headers['Accept'] = 'application/json';
-  request.headers['Authorization'] = 'Bearer $token';
-  request.fields.addAll(data);
+    request.headers['Accept'] = 'application/json';
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields.addAll(data);
 
-  // 🔥 MOBILE
-  if (filePath != null && filePath.isNotEmpty) {
-    request.files.add(
-      await http.MultipartFile.fromPath('file', filePath),
-    );
+    // MOBILE
+    if (filePath != null && filePath.isNotEmpty && !filePath.startsWith('http')) {
+      if (await File(filePath).exists()) {
+        request.files.add(
+          await http.MultipartFile.fromPath('file', filePath),
+        );
+      }
+    }
+
+    // WEB
+    if (fileBytes != null) {
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          fileBytes,
+          filename: fileName ?? 'file',
+        ),
+      );
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    return jsonDecode(response.body);
   }
 
-  // 🔥 WEB (INI YANG SEBELUMNYA KAMU TIDAK PUNYA)
-  if (fileBytes != null) {
-    request.files.add(
-      http.MultipartFile.fromBytes(
-        'file',
-        fileBytes,
-        filename: fileName ?? 'file',
-      ),
+  static Future<Map<String, dynamic>> updateProfile({
+    required String name,
+    required String phone,
+    String? password,
+    String? photoPath,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/profile/update'),
     );
+
+    request.headers['Accept'] = 'application/json';
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields['name'] = name;
+    request.fields['no_telp'] = phone;
+
+    if (password != null && password.isNotEmpty) {
+      request.fields['password'] = password;
+    }
+
+    if (photoPath != null && photoPath.isNotEmpty && !photoPath.startsWith('http')) {
+      if (await File(photoPath).exists()) {
+        request.files.add(
+          await http.MultipartFile.fromPath('foto', photoPath),
+        );
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+
+    return jsonDecode(response.body);
   }
-
-  final streamedResponse = await request.send();
-  final response = await http.Response.fromStream(streamedResponse);
-
-  return jsonDecode(response.body);
-}
 }

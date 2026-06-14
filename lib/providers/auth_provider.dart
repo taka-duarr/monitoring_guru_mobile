@@ -28,11 +28,18 @@ class AuthProvider with ChangeNotifier {
       _isAuthenticated = true;
       _role = prefs.getString('role') ?? '';
       _nik = prefs.getString('nik') ?? '';
-      
+
       // Load data kustom lokal jika ada, jika tidak pakai default
-      _name = prefs.getString('custom_name_$_nik') ?? prefs.getString('name') ?? '';
-      _phone = prefs.getString('custom_phone_$_nik') ?? prefs.getString('phone') ?? '';
-      _profilePhotoPath = prefs.getString('custom_photo_$_nik') ?? prefs.getString('profilePhotoPath') ?? '';
+      _name =
+          prefs.getString('custom_name_$_nik') ?? prefs.getString('name') ?? '';
+      _phone =
+          prefs.getString('custom_phone_$_nik') ??
+          prefs.getString('phone') ??
+          '';
+      _profilePhotoPath =
+          prefs.getString('custom_photo_$_nik') ??
+          prefs.getString('profilePhotoPath') ??
+          '';
       notifyListeners();
     }
   }
@@ -43,11 +50,17 @@ class AuthProvider with ChangeNotifier {
       if (response['success'] == true) {
         final prefs = await SharedPreferences.getInstance();
         final user = response['user'];
-        
+
         // Cek data kustom lokal untuk NIK ini, jika tidak ada baru gunakan respons dari API
-        final responseName = prefs.getString('custom_name_$nik') ?? user?['name'] ?? '';
-        final responsePhone = prefs.getString('custom_phone_$nik') ?? user?['phone'] ?? user?['no_telp'] ?? '';
-        final responsePhoto = prefs.getString('custom_photo_$nik') ?? user?['foto'] ?? '';
+        final responseName =
+            prefs.getString('custom_name_$nik') ?? user?['name'] ?? '';
+        final responsePhone =
+            prefs.getString('custom_phone_$nik') ??
+            user?['phone'] ??
+            user?['no_telp'] ??
+            '';
+        final responsePhoto =
+            prefs.getString('custom_photo_$nik') ?? user?['foto'] ?? '';
 
         await prefs.setString('token', response['token']);
         await prefs.setString('role', response['role']);
@@ -100,28 +113,37 @@ class AuthProvider with ChangeNotifier {
     String? password,
     String? photoPath,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    _name = name;
-    _phone = phone;
-    await prefs.setString('name', name);
-    await prefs.setString('phone', phone);
-    
-    // Simpan data kustom lokal secara spesifik per NIK
-    await prefs.setString('custom_name_$_nik', name);
-    await prefs.setString('custom_phone_$_nik', phone);
-    
-    if (photoPath != null) {
-      _profilePhotoPath = photoPath;
-      await prefs.setString('profilePhotoPath', photoPath);
-      await prefs.setString('custom_photo_$_nik', photoPath);
+    try {
+      final response = await ApiService.updateProfile(
+        name: name,
+        phone: phone,
+        password: password,
+        photoPath: photoPath,
+      );
+
+      if (response['success'] == true) {
+        final user = response['user'];
+        final prefs = await SharedPreferences.getInstance();
+        
+        final newName = user['name'] ?? name;
+        final newPhone = user['no_telp'] ?? phone;
+        final newPhoto = user['foto'] ?? _profilePhotoPath;
+
+        _name = newName;
+        _phone = newPhone;
+        _profilePhotoPath = newPhoto;
+
+        await prefs.setString('name', newName);
+        await prefs.setString('phone', newPhone);
+        await prefs.setString('profilePhotoPath', newPhoto);
+        
+        notifyListeners();
+      } else {
+        throw Exception(response['message'] ?? 'Gagal update profile');
+      }
+    } catch (e) {
+      debugPrint("Update profile error: $e");
+      rethrow;
     }
-    
-    if (password != null && password.isNotEmpty) {
-      // Simpan password kustom lokal secara spesifik per NIK
-      await prefs.setString('custom_password_$_nik', password);
-    }
-    
-    notifyListeners();
   }
 }
