@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
-import '../widgets/premium_button.dart';
+import '../theme/app_theme.dart';
 
 class AbsenMuridScreen extends StatefulWidget {
   final String absenMasukId;
@@ -59,8 +59,10 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? 'Berhasil disimpan'),
-            backgroundColor: Colors.green,
+            content: Text(response['message'] ?? 'Berhasil disimpan', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            backgroundColor: T.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
         Navigator.pop(context); // Kembali setelah save
@@ -68,15 +70,22 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message'] ?? 'Gagal menyimpan'),
-            backgroundColor: Colors.red,
+            content: Text(response['message'] ?? 'Gagal menyimpan', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+            backgroundColor: T.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Terjadi kesalahan jaringan'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Terjadi kesalahan jaringan', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+          backgroundColor: T.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       );
     } finally {
       if (mounted) {
@@ -88,6 +97,7 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
   }
 
   void _toggleAll(bool value) {
+    HapticFeedback.lightImpact();
     setState(() {
       for (var murid in _murids) {
         murid['status'] = value ? 'hadir' : 'alpa';
@@ -98,140 +108,269 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
   @override
   Widget build(BuildContext context) {
     int countHadir = _murids.where((m) => m['status'] == 'hadir').length;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    bool allHadir = _murids.isNotEmpty && countHadir == _murids.length;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: T.bg,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).cardColor,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800),
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: T.inkDark),
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Absen Kelas ${widget.kelasName}',
               style: GoogleFonts.outfit(
-                color: isDark ? const Color(0xFFF1F5F9) : Colors.blueGrey.shade800,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+                color: T.inkDark,
+                fontWeight: FontWeight.w800,
+                fontSize: 20,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               widget.mapelName,
               style: GoogleFonts.inter(
-                color: isDark ? const Color(0xFF94A3B8) : Colors.blueGrey.shade500,
+                color: T.sub,
                 fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
-        actions: [
-          if (!_isLoading && _murids.isNotEmpty)
-            TextButton(
-              onPressed: () {
-                bool allHadir = countHadir == _murids.length;
-                _toggleAll(!allHadir);
-              },
-              child: Text(
-                countHadir == _murids.length ? 'Deselect All' : 'Select All',
-                style: GoogleFonts.inter(
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? const Color(0xFF818CF8) : Colors.indigo,
-                ),
-              ),
-            )
-        ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: T.ink))
           : _murids.isEmpty
               ? Center(
-                  child: Text(
-                    'Belum ada data murid di kelas ini.',
-                    style: GoogleFonts.inter(color: isDark ? const Color(0xFF94A3B8) : Colors.grey),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 52, height: 52,
+                        decoration: BoxDecoration(color: T.card2, borderRadius: BorderRadius.circular(16)),
+                        child: const Icon(Icons.people_outline_rounded, color: T.muted, size: 26),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Belum ada data murid\ndi kelas ini.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(color: T.muted, fontSize: 14),
+                      ),
+                    ],
                   ),
                 )
               : Column(
                   children: [
+                    // Summary Banner
                     Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                      color: isDark ? const Color(0xFF1E1B4B) : Colors.indigo.shade50,
-                      child: Text(
-                        'Total Hadir: $countHadir dari ${_murids.length} Siswa',
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? const Color(0xFFC7D2FE) : Colors.indigo.shade700,
-                        ),
+                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: T.card,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: T.border),
+                        boxShadow: T.shadow,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: T.card2,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.analytics_rounded, color: T.ink, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Total Hadir',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: T.muted,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '$countHadir / ${_murids.length} Siswa',
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: T.inkDark,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _toggleAll(!allHadir),
+                            icon: Icon(
+                              allHadir ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                              size: 18,
+                              color: allHadir ? T.green : T.sub,
+                            ),
+                            label: Text(
+                              allHadir ? 'Hapus Semua' : 'Pilih Semua',
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: allHadir ? T.green : T.sub,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              backgroundColor: allHadir ? T.greenBg : T.card2,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          )
+                        ],
                       ),
                     ),
+                    
+                    // List Murid
                     Expanded(
                       child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                         itemCount: _murids.length,
                         itemBuilder: (context, index) {
                           final murid = _murids[index];
                           final isHadir = murid['status'] == 'hadir';
 
-                          return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isHadir
-                                    ? (isDark ? const Color(0xFF312E81) : Colors.indigo.shade100)
-                                    : (isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.4) : Colors.red.shade100),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: CheckboxListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                              activeColor: Theme.of(context).primaryColor,
-                              checkColor: Colors.white,
-                              title: Text(
-                                murid['name'] ?? '-',
-                                style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: isDark ? const Color(0xFFF1F5F9) : Colors.black87,
+                          return GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              setState(() {
+                                murid['status'] = isHadir ? 'alpa' : 'hadir';
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOut,
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: isHadir ? T.card : const Color(0xFFFAFAFA),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isHadir ? T.border : T.redBr.withValues(alpha: 0.5),
+                                  width: isHadir ? 1.5 : 1.5,
                                 ),
+                                boxShadow: isHadir ? T.shadow : [],
                               ),
-                              subtitle: Text(
-                                'No. ${murid['no_absen'] ?? '-'} • NIS: ${murid['nis'] ?? '-'}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 13,
-                                  color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
-                                ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 44, height: 44,
+                                    decoration: BoxDecoration(
+                                      color: isHadir ? T.card2 : T.redBg,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      murid['no_absen']?.toString() ?? '-',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: isHadir ? T.ink : T.red,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          murid['name'] ?? '-',
+                                          style: GoogleFonts.outfit(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: T.inkDark,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'NIS: ${murid['nis'] ?? '-'}',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 13,
+                                            color: T.sub,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    width: 28, height: 28,
+                                    decoration: BoxDecoration(
+                                      color: isHadir ? T.green : Colors.transparent,
+                                      border: Border.all(
+                                        color: isHadir ? T.green : T.border,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: isHadir 
+                                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+                                        : null,
+                                  ),
+                                ],
                               ),
-                              value: isHadir,
-                              onChanged: (bool? value) {
-                                HapticFeedback.lightImpact();
-                                setState(() {
-                                  murid['status'] = (value == true) ? 'hadir' : 'alpa';
-                                });
-                              },
                             ),
                           );
                         },
                       ),
                     ),
+
+                    // Save Button
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
+                        color: T.card,
+                        border: const Border(top: BorderSide(color: T.border2)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
+                            color: Colors.black.withValues(alpha: 0.03),
                             blurRadius: 10,
                             offset: const Offset(0, -5),
                           )
                         ],
                       ),
-                      child: PremiumButton(
-                        label: 'Simpan Absensi',
-                        isLoading: _isSaving,
-                        onPressed: _saveAbsen,
+                      child: SafeArea(
+                        top: false,
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isSaving ? null : _saveAbsen,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: T.ink,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: _isSaving
+                                ? const SizedBox(
+                                    width: 20, height: 20,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : Text(
+                                    'Simpan Absensi',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                          ),
+                        ),
                       ),
                     )
                   ],

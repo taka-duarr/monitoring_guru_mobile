@@ -4,12 +4,12 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/premium_button.dart';
+import '../theme/app_theme.dart';
 import 'login_screen.dart';
+import '../services/api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
-
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
@@ -22,7 +22,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   final TextEditingController _passwordController = TextEditingController();
-
   String? _localPhotoPath;
 
   @override
@@ -31,9 +30,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     _nameController = TextEditingController(text: auth.name);
     _phoneController = TextEditingController(text: auth.phone);
-    _localPhotoPath = auth.profilePhotoPath.isNotEmpty
-        ? auth.profilePhotoPath
-        : null;
+    _localPhotoPath =
+        auth.profilePhotoPath.isNotEmpty ? auth.profilePhotoPath : null;
   }
 
   @override
@@ -44,61 +42,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  ImageProvider _avatar(String? path) {
+    if (path != null && path.isNotEmpty) {
+      if (path.startsWith('http') || path.startsWith('https')) return NetworkImage(path);
+      final f = File(path);
+      if (f.existsSync()) return FileImage(f);
+
+      final storageUrl = ApiService.baseUrl.replaceAll('/api', '/storage');
+      return NetworkImage('$storageUrl/$path');
+    }
+    return const AssetImage('assets/images/logo.png');
+  }
+
   Future<void> _pickPhoto() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: false,
-      );
-
-      if (result != null && result.files.single.path != null) {
-        if (!mounted) return;
-        setState(() {
-          _localPhotoPath = result.files.single.path;
-        });
+      final result = await FilePicker.platform.pickFiles(type: FileType.image, allowMultiple: false);
+      if (result?.files.single.path != null && mounted) {
+        setState(() => _localPhotoPath = result!.files.single.path);
       }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Gagal memilih foto.')));
-    }
+    } catch (_) {}
   }
 
   void _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-
     setState(() => _isSaving = true);
     try {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       await auth.updateProfile(
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim(),
-        password: _passwordController.text.isNotEmpty
-            ? _passwordController.text
-            : null,
+        password: _passwordController.text.isNotEmpty ? _passwordController.text : null,
         photoPath: _localPhotoPath,
       );
-
       if (!mounted) return;
-      setState(() {
-        _isEditing = false;
-        _passwordController.clear();
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profil berhasil diperbarui!')),
-      );
+      setState(() { _isEditing = false; _passwordController.clear(); });
+      _showSnack('Profil berhasil diperbarui!', isError: false);
     } catch (e) {
-      if (!mounted) return;
-      final errorMsg = e.toString().replaceAll('Exception: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal: $errorMsg')),
-      );
+      _showSnack(e.toString().replaceAll('Exception: ', ''), isError: true);
     } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -108,93 +90,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _isEditing = false;
       _nameController.text = auth.name;
       _phoneController.text = auth.phone;
-      _localPhotoPath = auth.profilePhotoPath.isNotEmpty
-          ? auth.profilePhotoPath
-          : null;
+      _localPhotoPath = auth.profilePhotoPath.isNotEmpty ? auth.profilePhotoPath : null;
       _passwordController.clear();
     });
-  }
-
-  void _executeLogout() async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    await auth.logout();
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    }
   }
 
   void _logout() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: T.r16),
+        title: Text('Keluar dari Akun?', style: TS.h3()),
+        content: Text('Anda akan diarahkan ke halaman login.', style: TS.body()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Batal', style: TS.body(color: T.sub).copyWith(fontWeight: FontWeight.w600)),
           ),
-          title: Text(
-            'Konfirmasi Keluar',
-            style: GoogleFonts.outfit(
-              fontWeight: FontWeight.bold,
-              color: isDark ? const Color(0xFFF1F5F9) : Colors.indigo.shade900,
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await Provider.of<AuthProvider>(context, listen: false).logout();
+              if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: T.red, foregroundColor: Colors.white,
+              elevation: 0, shape: RoundedRectangleBorder(borderRadius: T.r12),
             ),
+            child: Text('Keluar', style: TS.bodyBold(color: Colors.white)),
           ),
-          content: Text(
-            'Apakah Anda yakin ingin keluar dari aplikasi?',
-            style: GoogleFonts.inter(
-              color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade700,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Batal',
-                style: GoogleFonts.inter(
-                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _executeLogout();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                'Keluar',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
-  ImageProvider _getAvatarImage(String? path) {
-    if (path != null && path.isNotEmpty) {
-      if (path.startsWith('http') || path.startsWith('https')) {
-        return NetworkImage(path);
-      } else {
-        final file = File(path);
-        if (file.existsSync()) {
-          return FileImage(file);
-        }
-      }
-    }
-    return const AssetImage(''); // Fallback handled by builder
+  void _showSnack(String msg, {required bool isError}) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg, style: TS.small(color: Colors.white)),
+      backgroundColor: isError ? T.red : T.green,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: T.r12),
+      margin: const EdgeInsets.all(16),
+    ));
   }
 
   @override
@@ -202,562 +139,217 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final isKetua = auth.role.toLowerCase() == 'ketuakelas';
     final roleLabel = isKetua ? 'Ketua Kelas' : 'Guru Pengajar';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: T.bg,
       appBar: AppBar(
-        title: Text(
-          'Profil Pengguna',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.bold,
-            color: isDark ? const Color(0xFFF1F5F9) : Colors.indigo.shade900,
-          ),
-        ),
-        backgroundColor: Theme.of(context).cardColor,
+        title: Text(_isEditing ? 'Edit Profil' : 'Profil', style: TS.h3()),
+        backgroundColor: T.card,
         elevation: 0,
-        actions: const [],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Profile Photo Card
-              Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.indigo.withValues(
-                              alpha: isDark ? 0.3 : 0.15,
-                            ),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: _localPhotoPath != null
-                            ? Image(
-                                image: _getAvatarImage(_localPhotoPath),
-                                fit: BoxFit.cover,
-                                errorBuilder: (c, o, s) {
-                                  return Container(
-                                    color: isDark
-                                        ? const Color(0xFF334155)
-                                        : Colors.indigo.shade50,
-                                    child: Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: isDark
-                                          ? const Color(0xFF818CF8)
-                                          : Colors.indigo.shade400,
-                                    ),
-                                  );
-                                },
-                              )
-                            : Container(
-                                color: isDark
-                                    ? const Color(0xFF334155)
-                                    : Colors.indigo.shade50,
-                                child: Center(
-                                  child: Text(
-                                    auth.name.isNotEmpty
-                                        ? auth.name[0].toUpperCase()
-                                        : '?',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 48,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDark
-                                          ? const Color(0xFF818CF8)
-                                          : Colors.indigo.shade700,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                      ),
-                    ),
-                    if (_isEditing)
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: InkWell(
-                          onTap: _pickPhoto,
-                          child: CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Theme.of(context).primaryColor,
-                            child: const Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                auth.name,
-                style: GoogleFonts.outfit(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: isDark
-                      ? const Color(0xFFF1F5F9)
-                      : Colors.indigo.shade900,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                roleLabel,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: isDark
-                      ? const Color(0xFF818CF8)
-                      : Colors.indigo.shade600,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 12),
-              if (!_isEditing)
-                TextButton.icon(
-                  onPressed: () => setState(() => _isEditing = true),
-                  icon: Icon(
-                    Icons.edit_outlined,
-                    size: 16,
-                    color: isDark ? const Color(0xFF818CF8) : Colors.indigo,
-                  ),
-                  label: Text(
-                    'Edit Profil',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? const Color(0xFF818CF8)
-                          : Colors.indigo.shade700,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    backgroundColor: isDark
-                        ? const Color(0xFF1E293B)
-                        : Colors.indigo.shade50,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 20),
-
-              // Form Cards
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha: isDark ? 0.1 : 0.03,
-                      ),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Informasi Personal',
-                      style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? const Color(0xFFF1F5F9)
-                            : Colors.indigo.shade900,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // NIK / NIS (Disable)
-                    TextFormField(
-                      initialValue: auth.nik.isNotEmpty ? auth.nik : '-',
-                      enabled: false,
-                      style: TextStyle(
-                        color: isDark
-                            ? const Color(0xFF94A3B8)
-                            : Colors.black87,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: isKetua
-                            ? 'NIS (Nomor Induk Siswa)'
-                            : 'NIK (Nomor Induk Karyawan)',
-                        labelStyle: TextStyle(
-                          color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : Colors.grey.shade600,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.badge_outlined,
-                          color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : Colors.indigo.shade600,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF475569)
-                                : Colors.grey.shade300,
-                          ),
-                        ),
-                        disabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF334155)
-                                : Colors.grey.shade200,
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: isDark
-                            ? const Color(0xFF0F172A).withValues(alpha: 0.5)
-                            : Colors.grey.shade100,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Role (Disable)
-                    TextFormField(
-                      initialValue: roleLabel,
-                      enabled: false,
-                      style: TextStyle(
-                        color: isDark
-                            ? const Color(0xFF94A3B8)
-                            : Colors.black87,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'Jabatan / Role',
-                        labelStyle: TextStyle(
-                          color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : Colors.grey.shade600,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.work_outline,
-                          color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : Colors.indigo.shade600,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF475569)
-                                : Colors.grey.shade300,
-                          ),
-                        ),
-                        disabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF334155)
-                                : Colors.grey.shade200,
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: isDark
-                            ? const Color(0xFF0F172A).withValues(alpha: 0.5)
-                            : Colors.grey.shade100,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Nama Lengkap (Editable in edit mode)
-                    TextFormField(
-                      controller: _nameController,
-                      enabled: _isEditing,
-                      style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'Nama Lengkap',
-                        labelStyle: TextStyle(
-                          color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : Colors.grey.shade600,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.person_outline,
-                          color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : Colors.indigo.shade600,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF475569)
-                                : Colors.grey.shade300,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF475569)
-                                : Colors.grey.shade300,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF818CF8)
-                                : Colors.indigo.shade600,
-                            width: 1.5,
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: _isEditing
-                            ? (isDark ? const Color(0xFF0F172A) : Colors.white)
-                            : (isDark
-                                  ? const Color(
-                                      0xFF0F172A,
-                                    ).withValues(alpha: 0.7)
-                                  : Colors.grey.shade50),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty)
-                          return 'Nama Lengkap harus diisi';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // No Telepon (Editable in edit mode)
-                    TextFormField(
-                      controller: _phoneController,
-                      enabled: _isEditing,
-                      keyboardType: TextInputType.phone,
-                      style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'Nomor Telepon',
-                        labelStyle: TextStyle(
-                          color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : Colors.grey.shade600,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.phone_outlined,
-                          color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : Colors.indigo.shade600,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF475569)
-                                : Colors.grey.shade300,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF475569)
-                                : Colors.grey.shade300,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF818CF8)
-                                : Colors.indigo.shade600,
-                            width: 1.5,
-                          ),
-                        ),
-                        filled: true,
-                        fillColor: _isEditing
-                            ? (isDark ? const Color(0xFF0F172A) : Colors.white)
-                            : (isDark
-                                  ? const Color(
-                                      0xFF0F172A,
-                                    ).withValues(alpha: 0.7)
-                                  : Colors.grey.shade50),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty)
-                          return 'Nomor Telepon harus diisi';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Password Baru (Editable in edit mode, only display if editing)
-                    if (_isEditing) ...[
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                        decoration: InputDecoration(
-                          labelText:
-                              'Password Baru (Kosongkan jika tidak diubah)',
-                          labelStyle: TextStyle(
-                            color: isDark
-                                ? const Color(0xFF94A3B8)
-                                : Colors.grey.shade600,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.lock_outline,
-                            color: isDark
-                                ? const Color(0xFF94A3B8)
-                                : Colors.indigo.shade600,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: isDark
-                                  ? const Color(0xFF475569)
-                                  : Colors.grey.shade300,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: isDark
-                                  ? const Color(0xFF475569)
-                                  : Colors.grey.shade300,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: isDark
-                                  ? const Color(0xFF818CF8)
-                                  : Colors.indigo.shade600,
-                              width: 1.5,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: isDark
-                              ? const Color(0xFF0F172A)
-                              : Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Action Buttons
-              if (_isEditing) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _isSaving ? null : _cancelEdit,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          side: BorderSide(
-                            color: isDark
-                                ? const Color(0xFF475569)
-                                : Colors.grey.shade300,
-                          ),
-                          foregroundColor: isDark
-                              ? const Color(0xFF94A3B8)
-                              : Colors.grey.shade700,
-                        ),
-                        child: Text(
-                          'Batal',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: PremiumButton(
-                        label: 'Simpan',
-                        isLoading: _isSaving,
-                        onPressed: _saveProfile,
-                      ),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                // Logout Button
-                InkWell(
-                  onTap: _logout,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF7F1D1D).withValues(alpha: 0.2)
-                          : Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark
-                            ? const Color(0xFFB91C1C).withValues(alpha: 0.4)
-                            : Colors.red.shade100,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.logout_rounded,
-                          color: isDark
-                              ? const Color(0xFFFCA5A5)
-                              : Colors.red.shade700,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Keluar dari Akun',
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? const Color(0xFFFCA5A5)
-                                : Colors.red.shade700,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 20),
-            ],
-          ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: T.border),
         ),
+        actions: [
+          if (!_isEditing)
+            IconButton(
+              onPressed: () => setState(() => _isEditing = true),
+              icon: const Icon(Icons.edit_outlined, size: 20, color: T.sub),
+            ),
+        ],
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            // ── Avatar Section ──────────────────────────────
+            Center(
+              child: Stack(
+                children: [
+                  GestureDetector(
+                    onTap: _isEditing ? _pickPhoto : null,
+                    child: CircleAvatar(
+                      radius: 48,
+                      backgroundColor: T.card2,
+                      backgroundImage: _localPhotoPath != null
+                          ? _avatar(_localPhotoPath)
+                          : null,
+                      child: _localPhotoPath == null
+                          ? Text(
+                              auth.name.isNotEmpty ? auth.name[0].toUpperCase() : '?',
+                              style: TS.h1().copyWith(fontSize: 36),
+                            )
+                          : null,
+                    ),
+                  ),
+                  if (_isEditing)
+                    Positioned(
+                      bottom: 0, right: 0,
+                      child: GestureDetector(
+                        onTap: _pickPhoto,
+                        child: Container(
+                          width: 30, height: 30,
+                          decoration: BoxDecoration(color: T.ink, shape: BoxShape.circle,
+                              border: Border.all(color: T.card, width: 2)),
+                          child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 14),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Center(child: Text(auth.name, style: TS.h2())),
+            const SizedBox(height: 4),
+            Center(
+              child: tBadge(roleLabel, bg: T.card2, fg: T.sub, border: T.border),
+            ),
+            const SizedBox(height: 28),
+
+            // ── Info Card ───────────────────────────────────
+            Container(
+              decoration: cardDeco(),
+              child: Column(
+                children: [
+                  _infoTile(
+                    icon: Icons.badge_outlined,
+                    label: isKetua ? 'NIS' : 'NIK',
+                    value: auth.nik.isNotEmpty ? auth.nik : '-',
+                  ),
+                  divider(indent: 56),
+                  _infoTile(
+                    icon: Icons.work_outline_rounded,
+                    label: 'Jabatan',
+                    value: roleLabel,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Editable Fields ─────────────────────────────
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: cardDeco(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Informasi Akun', style: TS.h3()),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _nameController,
+                    enabled: _isEditing,
+                    style: TS.bodyBold(),
+                    decoration: minInput(
+                      label: 'Nama Lengkap',
+                      prefix: const Icon(Icons.person_outline_rounded, size: 18, color: T.muted),
+                    ),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _phoneController,
+                    enabled: _isEditing,
+                    keyboardType: TextInputType.phone,
+                    style: TS.bodyBold(),
+                    decoration: minInput(
+                      label: 'Nomor Telepon',
+                      prefix: const Icon(Icons.phone_outlined, size: 18, color: T.muted),
+                    ),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+                  ),
+                  if (_isEditing) ...[
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      style: TS.bodyBold(),
+                      decoration: minInput(
+                        label: 'Password Baru (opsional)',
+                        prefix: const Icon(Icons.lock_outline_rounded, size: 18, color: T.muted),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── Action Buttons ──────────────────────────────
+            if (_isEditing) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : _cancelEdit,
+                      style: ghostBtn(),
+                      child: Text('Batal', style: TS.bodyBold(color: T.sub)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : _saveProfile,
+                      style: primaryBtn(),
+                      child: _isSaving
+                          ? const SizedBox(width: 18, height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : Text('Simpan', style: TS.bodyBold(color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              // Logout
+              GestureDetector(
+                onTap: _logout,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: T.redBg, borderRadius: T.r12,
+                    border: Border.all(color: T.redBr),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.logout_rounded, color: T.red, size: 18),
+                      const SizedBox(width: 8),
+                      Text('Keluar dari Akun', style: TS.bodyBold(color: T.red)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoTile({required IconData icon, required String label, required String value}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(color: T.card2, borderRadius: T.r8),
+            child: Icon(icon, size: 18, color: T.sub),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TS.small()),
+                const SizedBox(height: 2),
+                Text(value, style: TS.bodyBold()),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

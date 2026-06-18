@@ -39,12 +39,38 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  static Future<Map<String, dynamic>> getJadwal() async {
+  static Future<Map<String, dynamic>> getJadwal({String? tahunAjaranId}) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
+    String url = '$baseUrl/jadwal';
+    if (tahunAjaranId != null) {
+      url += '?tahun_ajaran_id=$tahunAjaranId';
+    }
+
     final response = await http.get(
-      Uri.parse('$baseUrl/jadwal'),
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    return jsonDecode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> getRiwayatGlobal({String? tahunAjaranId}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    String url = '$baseUrl/riwayat';
+    if (tahunAjaranId != null) {
+      url += '?tahun_ajaran_id=$tahunAjaranId';
+    }
+
+    final response = await http.get(
+      Uri.parse(url),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',

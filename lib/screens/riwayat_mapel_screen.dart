@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'absen_murid_screen.dart';
 
@@ -70,6 +72,8 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final isKetua = auth.role.toLowerCase() == 'ketuakelas';
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -114,6 +118,7 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                     final isSelesai = absenKeluar != null;
                     final kelas = item['kelas']?['name'] ?? '-';
                     final ruangan = item['ruangan']?['name'] ?? '-';
+                    final guru = item['guru']?['name'] ?? '-';
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -174,7 +179,7 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                               ),
                             ),
                             Text(
-                              ruangan,
+                              'Guru: $guru • Ruangan: $ruangan',
                               style: GoogleFonts.inter(
                                 color: isDark ? const Color(0xFF94A3B8) : Colors.blueGrey.shade600,
                                 fontSize: 13,
@@ -244,33 +249,35 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => AbsenMuridScreen(
-                                        absenMasukId: item['id'],
-                                        mapelName: widget.mapelName,
-                                        kelasName: kelas,
+                            if (!isKetua) ...[
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => AbsenMuridScreen(
+                                          absenMasukId: item['id'],
+                                          mapelName: widget.mapelName,
+                                          kelasName: kelas,
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.people, size: 18),
-                                label: const Text('Absen Murid'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: isDark ? const Color(0xFF312E81) : Colors.indigo.shade50,
-                                  foregroundColor: isDark ? const Color(0xFFC7D2FE) : Colors.indigo.shade700,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.people, size: 18),
+                                  label: const Text('Absen Murid'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isDark ? const Color(0xFF312E81) : Colors.indigo.shade50,
+                                    foregroundColor: isDark ? const Color(0xFFC7D2FE) : Colors.indigo.shade700,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
