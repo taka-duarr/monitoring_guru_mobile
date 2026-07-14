@@ -691,30 +691,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // time badge + LIVE badge
+                      // time badge
                       Wrap(
                         spacing: 6, runSpacing: 4,
                         children: [
                           _timeBadge('$jamMulai – $jamSelesai'),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEF3C7),
-                              border: Border.all(color: _C.amberBdr),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 5, height: 5,
-                                  decoration: const BoxDecoration(color: _C.amber, shape: BoxShape.circle),
-                                ),
-                                const SizedBox(width: 4),
-                                Text('LIVE', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF92400E))),
-                              ],
-                            ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 6),
