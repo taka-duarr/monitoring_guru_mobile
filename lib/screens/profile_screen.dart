@@ -321,6 +321,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ],
+            const SizedBox(height: 32),
+            Center(
+              child: Text(
+                'Sistem Informasi Monitoring Guru\nTeknik Informatika ITATS © ${DateTime.now().year}',
+                textAlign: TextAlign.center,
+                style: TS.small(color: T.muted).copyWith(height: 1.5),
+              ),
+            ),
             const SizedBox(height: 40),
           ],
         ),

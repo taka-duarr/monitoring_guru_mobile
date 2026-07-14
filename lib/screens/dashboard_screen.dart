@@ -1073,6 +1073,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
 
+  Widget _buildLockedButton(String time) {
+    return SizedBox(
+      width: double.infinity,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 13),
+        decoration: BoxDecoration(
+          color: _C.slate50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _C.slate200),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_rounded, size: 16, color: _C.sub),
+            const SizedBox(width: 8),
+            Text(
+              'Terbuka pukul $time',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: _C.sub, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCardActions(
     dynamic j, bool isKetua, bool hasMasuk, bool hasKeluar, bool isDone, String mapelName,
   ) {
@@ -1095,7 +1120,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
+    // TIME VALIDATION (Lock before jam_mulai)
+    final now = DateTime.now();
+    bool isLocked = false;
+    String jamMulaiFormatted = '-';
+    if (!hasMasuk && j['jam_mulai'] != null) {
+      jamMulaiFormatted = j['jam_mulai'].toString().substring(0, 5);
+      final parts = j['jam_mulai'].toString().split(':');
+      if (parts.length >= 2) {
+        final hour = int.tryParse(parts[0]) ?? 0;
+        final min = int.tryParse(parts[1]) ?? 0;
+        final target = DateTime(now.year, now.month, now.day, hour, min);
+        if (now.isBefore(target)) {
+          isLocked = true;
+        }
+      }
+    }
+
     if (isKetua) {
+      if (isLocked) {
+        return _buildLockedButton(jamMulaiFormatted);
+      }
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
@@ -1116,6 +1161,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     // Guru: not started
     if (!hasMasuk) {
+      if (isLocked) {
+        return _buildLockedButton(jamMulaiFormatted);
+      }
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
