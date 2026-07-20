@@ -100,15 +100,59 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
     HapticFeedback.lightImpact();
     setState(() {
       for (var murid in _murids) {
-        murid['status'] = value ? 'hadir' : 'alpa';
+        murid['status'] = value ? 'masuk' : 'alpa';
       }
     });
   }
 
+  void _showStatusSelector(Map<String, dynamic> murid) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: T.bg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Pilih Status Absensi', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: T.inkDark)),
+            const SizedBox(height: 16),
+            _statusTile(murid, 'masuk', 'Masuk', Icons.check_circle_rounded, T.green),
+            _statusTile(murid, 'izin', 'Izin', Icons.info_rounded, Colors.blue),
+            _statusTile(murid, 'sakit', 'Sakit', Icons.local_hospital_rounded, Colors.orange),
+            _statusTile(murid, 'terlambat', 'Terlambat', Icons.timer_rounded, Colors.amber),
+            _statusTile(murid, 'alpa', 'Alpa / Tanpa Keterangan', Icons.cancel_rounded, T.red),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statusTile(Map<String, dynamic> murid, String value, String label, IconData icon, Color color) {
+    final isSelected = murid['status'] == value;
+    return ListTile(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        setState(() => murid['status'] = value);
+        Navigator.pop(context);
+      },
+      leading: Icon(icon, color: color),
+      title: Text(label, style: GoogleFonts.inter(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+      trailing: isSelected ? Icon(Icons.check, color: color) : null,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      tileColor: isSelected ? color.withValues(alpha: 0.1) : null,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    int countHadir = _murids.where((m) => m['status'] == 'hadir').length;
-    bool allHadir = _murids.isNotEmpty && countHadir == _murids.length;
+    int countMasuk = _murids.where((m) => m['status'] == 'masuk').length;
+    bool allMasuk = _murids.isNotEmpty && countMasuk == _murids.length;
 
     return Scaffold(
       backgroundColor: T.bg,
@@ -190,7 +234,7 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Total Hadir',
+                                    'Total Masuk',
                                     style: GoogleFonts.inter(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -199,7 +243,7 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '$countHadir / ${_murids.length} Siswa',
+                                    '$countMasuk / ${_murids.length} Siswa',
                                     style: GoogleFonts.outfit(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
@@ -211,22 +255,22 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
                             ],
                           ),
                           TextButton.icon(
-                            onPressed: () => _toggleAll(!allHadir),
+                            onPressed: () => _toggleAll(!allMasuk),
                             icon: Icon(
-                              allHadir ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                              allMasuk ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
                               size: 18,
-                              color: allHadir ? T.green : T.sub,
+                              color: allMasuk ? T.green : T.sub,
                             ),
                             label: Text(
-                              allHadir ? 'Hapus Semua' : 'Pilih Semua',
+                              allMasuk ? 'Hapus Semua' : 'Set Semua Masuk',
                               style: GoogleFonts.inter(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
-                                color: allHadir ? T.green : T.sub,
+                                color: allMasuk ? T.green : T.sub,
                               ),
                             ),
                             style: TextButton.styleFrom(
-                              backgroundColor: allHadir ? T.greenBg : T.card2,
+                              backgroundColor: allMasuk ? T.greenBg : T.card2,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
@@ -242,14 +286,33 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
                         itemCount: _murids.length,
                         itemBuilder: (context, index) {
                           final murid = _murids[index];
-                          final isHadir = murid['status'] == 'hadir';
+                          final status = murid['status'] ?? 'alpa';
+                          
+                          Color statusColor = T.red;
+                          IconData statusIcon = Icons.cancel_rounded;
+                          String statusText = 'Alpa';
+                          
+                          if (status == 'masuk') {
+                            statusColor = T.green;
+                            statusIcon = Icons.check_circle_rounded;
+                            statusText = 'Masuk';
+                          } else if (status == 'izin') {
+                            statusColor = Colors.blue;
+                            statusIcon = Icons.info_rounded;
+                            statusText = 'Izin';
+                          } else if (status == 'sakit') {
+                            statusColor = Colors.orange;
+                            statusIcon = Icons.local_hospital_rounded;
+                            statusText = 'Sakit';
+                          } else if (status == 'terlambat') {
+                            statusColor = Colors.amber.shade600;
+                            statusIcon = Icons.timer_rounded;
+                            statusText = 'Terlambat';
+                          }
 
                           return GestureDetector(
                             onTap: () {
-                              HapticFeedback.lightImpact();
-                              setState(() {
-                                murid['status'] = isHadir ? 'alpa' : 'hadir';
-                              });
+                              _showStatusSelector(murid);
                             },
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
@@ -257,20 +320,20 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: isHadir ? T.card : const Color(0xFFFAFAFA),
+                                color: status == 'masuk' ? T.card : const Color(0xFFFAFAFA),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: isHadir ? T.border : T.redBr.withValues(alpha: 0.5),
-                                  width: isHadir ? 1.5 : 1.5,
+                                  color: statusColor.withValues(alpha: 0.5),
+                                  width: 1.5,
                                 ),
-                                boxShadow: isHadir ? T.shadow : [],
+                                boxShadow: status == 'masuk' ? T.shadow : [],
                               ),
                               child: Row(
                                 children: [
                                   Container(
                                     width: 44, height: 44,
                                     decoration: BoxDecoration(
-                                      color: isHadir ? T.card2 : T.redBg,
+                                      color: statusColor.withValues(alpha: 0.1),
                                       shape: BoxShape.circle,
                                     ),
                                     alignment: Alignment.center,
@@ -279,7 +342,7 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
                                       style: GoogleFonts.outfit(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w800,
-                                        color: isHadir ? T.ink : T.red,
+                                        color: statusColor,
                                       ),
                                     ),
                                   ),
@@ -309,18 +372,26 @@ class _AbsenMuridScreenState extends State<AbsenMuridScreen> {
                                   ),
                                   const SizedBox(width: 12),
                                   Container(
-                                    width: 28, height: 28,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: isHadir ? T.green : Colors.transparent,
-                                      border: Border.all(
-                                        color: isHadir ? T.green : T.border,
-                                        width: 2,
-                                      ),
+                                      color: statusColor.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                                     ),
-                                    child: isHadir 
-                                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-                                        : null,
+                                    child: Row(
+                                      children: [
+                                        Icon(statusIcon, size: 14, color: statusColor),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          statusText,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: statusColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),

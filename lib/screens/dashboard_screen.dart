@@ -975,7 +975,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     spacing: 6, runSpacing: 4,
                     children: [
                       _timeBadge('$jamMulai – $jamSelesai'),
-                      _statusBadge(isDone: isDone, hasMasuk: hasMasuk),
+                      _statusBadge(isDone: isDone, hasMasuk: hasMasuk, isIzin: j['izin_guru'] != null),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -1082,6 +1082,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildCardActions(
     dynamic j, bool isKetua, bool hasMasuk, bool hasKeluar, bool isDone, String mapelName,
   ) {
+    final isIzin = j['izin_guru'] != null;
+
+    if (isIzin) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFBEB),
+          border: Border.all(color: const Color(0xFFFDE68A)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFFB45309)),
+                const SizedBox(width: 6),
+                Text(isKetua ? 'Guru Sedang Izin' : 'Anda Sedang Izin', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFB45309))),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text('${j['izin_guru']['judul']} - ${j['izin_guru']['pesan']}', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF92400E))),
+          ],
+        ),
+      );
+    }
+
     if (isDone) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1213,12 +1241,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: _C.sub, letterSpacing: .3)),
       );
 
-  Widget _statusBadge({required bool isDone, required bool hasMasuk}) {
+  Widget _statusBadge({required bool isDone, required bool hasMasuk, bool isIzin = false}) {
     if (isDone) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
         decoration: BoxDecoration(color: _C.slate100, borderRadius: BorderRadius.circular(99)),
         child: Text('Selesai', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: _C.sub)),
+      );
+    }
+    if (isIzin) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+        decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(99)),
+        child: Text('Izin Diterima', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFFD97706))),
       );
     }
     return Container(

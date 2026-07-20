@@ -89,13 +89,13 @@ class _LoginScreenState extends State<LoginScreen>
   void _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    final success = await Provider.of<AuthProvider>(
+    final errorMessage = await Provider.of<AuthProvider>(
       context,
       listen: false,
     ).login(_nikController.text.trim(), _passwordController.text);
     if (!mounted) return;
     setState(() => _isLoading = false);
-    if (success) {
+    if (errorMessage == null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('saved_nik', _nikController.text.trim());
       await prefs.setString('saved_password', _passwordController.text);
@@ -128,9 +128,11 @@ class _LoginScreenState extends State<LoginScreen>
                 size: 18,
               ),
               const SizedBox(width: 8),
-              Text(
-                'NIK/NIS atau password salah.',
-                style: TS.smallBold(color: Colors.white),
+              Expanded(
+                child: Text(
+                  errorMessage,
+                  style: TS.smallBold(color: Colors.white),
+                ),
               ),
             ],
           ),

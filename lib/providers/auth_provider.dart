@@ -44,7 +44,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> login(String nik, String password) async {
+  Future<String?> login(String nik, String password) async {
     try {
       final response = await ApiService.login(nik, password);
       if (response['success'] == true) {
@@ -76,12 +76,14 @@ class AuthProvider with ChangeNotifier {
         _phone = responsePhone;
         _profilePhotoPath = responsePhoto;
         notifyListeners();
-        return true;
+        return null;
+      } else {
+        return response['message'] ?? 'NIK/NIS atau password salah.';
       }
     } catch (e) {
       debugPrint("Login error: $e");
+      return 'Terjadi kesalahan saat terhubung ke server.';
     }
-    return false;
   }
 
   Future<void> logout() async {

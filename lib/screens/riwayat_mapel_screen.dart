@@ -115,7 +115,8 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                     final jamMasuk = item['jam_masuk'] ?? '-';
                     final absenKeluar = item['absen_keluar'];
                     final jamKeluar = absenKeluar != null ? absenKeluar['jam_keluar'] : '-';
-                    final isSelesai = absenKeluar != null;
+                    final isSelesai = absenKeluar != null && absenKeluar['jam_keluar'] != '-';
+                    final isIzin = item['is_izin'] == true;
                     final kelas = item['kelas']?['name'] ?? '-';
                     final ruangan = item['ruangan']?['name'] ?? '-';
                     final guru = item['guru']?['name'] ?? '-';
@@ -151,18 +152,22 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: isSelesai
-                                        ? (isDark ? const Color(0xFF064E3B) : Colors.green.shade50)
-                                        : (isDark ? const Color(0xFF78350F) : Colors.amber.shade50),
+                                    color: isIzin 
+                                        ? (isDark ? const Color(0xFF78350F) : const Color(0xFFFEF3C7))
+                                        : (isSelesai
+                                            ? (isDark ? const Color(0xFF064E3B) : Colors.green.shade50)
+                                            : (isDark ? const Color(0xFF1E3A8A) : Colors.blue.shade50)),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    isSelesai ? 'Selesai' : 'Sedang Mengajar',
+                                    isIzin ? 'Izin' : (isSelesai ? 'Selesai' : 'Sedang Mengajar'),
                                     style: GoogleFonts.inter(
                                       fontWeight: FontWeight.bold,
-                                      color: isSelesai
-                                          ? (isDark ? const Color(0xFFA7F3D0) : Colors.green.shade700)
-                                          : (isDark ? const Color(0xFFFDE68A) : Colors.amber.shade700),
+                                      color: isIzin
+                                          ? (isDark ? const Color(0xFFFDE68A) : const Color(0xFFD97706))
+                                          : (isSelesai
+                                              ? (isDark ? const Color(0xFFA7F3D0) : Colors.green.shade700)
+                                              : (isDark ? const Color(0xFF93C5FD) : Colors.blue.shade700)),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -249,7 +254,33 @@ class _RiwayatMapelScreenState extends State<RiwayatMapelScreen> {
                                 ),
                               ],
                             ),
-                            if (!isKetua) ...[
+                            if (isIzin) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFFBEB),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFFDE68A)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFFB45309)),
+                                        const SizedBox(width: 6),
+                                        Text('Keterangan Izin', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFB45309))),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text('${item['izin_judul'] ?? ''} - ${item['izin_pesan'] ?? ''}', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF92400E))),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            if (!isKetua && !isIzin) ...[
                               const SizedBox(height: 16),
                               SizedBox(
                                 width: double.infinity,

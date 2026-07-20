@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:typed_data';
 
 class ApiService {
@@ -10,14 +11,36 @@ class ApiService {
   static String get baseUrl =>
       dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000/api';
 
+  static Future<String?> getDeviceId() async {
+    try {
+      final deviceInfo = DeviceInfoPlugin();
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        return "${androidInfo.brand} ${androidInfo.model} (${androidInfo.id})";
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        return "${iosInfo.name} ${iosInfo.model} (${iosInfo.identifierForVendor})";
+      }
+    } catch (e) {
+      return null; // fallback
+    }
+    return null;
+  }
+
   static Future<Map<String, dynamic>> login(String nik, String password) async {
+    final deviceId = await getDeviceId();
+
     final response = await http.post(
       Uri.parse('$baseUrl/login'),
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: jsonEncode({'nik': nik, 'password': password}),
+      body: jsonEncode({
+        'nik': nik, 
+        'password': password,
+        if (deviceId != null) 'device_id': deviceId,
+      }),
     );
 
     return jsonDecode(response.body);
